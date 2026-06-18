@@ -38,14 +38,13 @@ function Game() {
         <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 px-5 py-5 backdrop-blur md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
-              Diamond Top Up
+             Dyzz Diamond Top Up
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              Fast, clean, and secure diamond delivery
+              Fast, clean, and secure 
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">
-              Pick a game, choose a package, pay with KHQR, and track your
-              order in one smooth flow.
+              Pick a game, choose a package, pay with KHQR
             </p>
           </div>
 
@@ -129,13 +128,13 @@ function Game() {
                         <h3 className="mt-2 text-2xl font-black text-white">
                           {game.name}
                         </h3>
-                        <p className="mt-2 text-sm text-slate-300">
+                        {/* <p className="mt-2 text-sm text-slate-300">
                           {game.packages?.length || 0} packages ready
-                        </p>
+                        </p> */}
                       </div>
 
                       <div className="flex items-center justify-between text-sm text-slate-300">
-                        <span>{game.code || "topup"}</span>
+                        {/* <span>{game.code || "topup"}</span> */}
                         <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-emerald-200">
                           Open shop
                         </span>

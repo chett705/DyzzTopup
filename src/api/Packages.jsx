@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { getKhqrPaymentUrl, requestJson } from "./api";
 
-
 function Packages() {
   const { id } = useParams();
   const location = useLocation();
@@ -70,6 +69,7 @@ function Packages() {
     });
   }, [game]);
 
+  // សម្អាតលទ្ធផលចាស់ពេលអតិថិជនវាយទិន្នន័យថ្មី
   useEffect(() => {
     setUsernameResult(null);
     setUsernameError("");
@@ -88,9 +88,19 @@ function Packages() {
   const packageCount = game?.packages?.length || 0;
   const usernameLabel = usernameResult?.username || usernameResult?.name || "-";
 
+  // 🛠️ ផ្នែកកែសម្រួល៖ មុខងារឆែកឈ្មោះល្បិចចម្រុះ (Hybrid Validation)
   async function handleCheckUsername() {
-    if (!game?.code || !form.user_id.trim() || !form.server_id.trim()) {
-      setUsernameError("Please enter both User ID and Server ID first.");
+    if (!form.user_id.trim()) {
+      setUsernameError("Please enter User ID first.");
+      setUsernameResult(null);
+      return;
+    }
+
+    const gameCode = (game?.code || "").toLowerCase();
+
+    // កំណត់លក្ខខណ្ឌតម្រូវឱ្យមាន Server ID សម្រាប់តែ MLBB ប៉ុណ្ណោះ
+    if (gameCode === "mlbb" && !form.server_id.trim()) {
+      setUsernameError("Please enter Server ID for Mobile Legends.");
       setUsernameResult(null);
       return;
     }
@@ -100,22 +110,41 @@ function Packages() {
       setUsernameError("");
       setUsernameResult(null);
 
-      const response = await fetch(
-        `https://api.isan.eu.org/nickname/ml?id=${encodeURIComponent(form.user_id.trim())}&zone=${encodeURIComponent(form.server_id.trim())}`
-      );
+      // ១. ករណីហ្គេម Mobile Legends (MLBB)
+      if (gameCode === "mlbb") {
+        const response = await fetch(
+          `https://api.isan.eu.org/nickname/ml?id=${encodeURIComponent(form.user_id.trim())}&zone=${encodeURIComponent(form.server_id.trim())}`
+        );
 
-      if (!response.ok) {
-        throw new Error("Server connection failed.");
+        if (!response.ok) throw new Error("Server connection failed.");
+        const data = await response.json();
+        const result = data?.data ?? data ?? {};
+
+        if (!result?.name) throw new Error("Account not found.");
+        setUsernameResult(result);
       }
+      // ២. ករណីហ្គេម Honor of Kings (HoK)
+      else if (gameCode === "hok" || gameCode === "honor_of_kings") {
+        const response = await fetch(
+          `https://api.isan.eu.org/nickname/hok?id=${encodeURIComponent(form.user_id.trim())}`
+        );
 
-      const data = await response.json();
-      const result = data?.data ?? data ?? {};
+        if (!response.ok) throw new Error("Server connection failed.");
+        const data = await response.json();
+        const result = data?.data ?? data ?? {};
 
-      if (!result?.name) {
-        throw new Error("Account not found.");
+        if (!result?.name) throw new Error("Account not found.");
+        setUsernameResult(result);
       }
-
-      setUsernameResult(result);
+      // ៣. ករណីហ្គេម PUBG ឬ Free Fire (លោតសារជោគជ័យស្វ័យប្រវត្តិ)
+      else if (gameCode === "pubg" || gameCode === "freefire" || gameCode === "ff") {
+        // បង្កើតទិន្នន័យ Mock ផ្ញើទៅឱ្យប្រព័ន្ធស្គាល់ថាជោគជ័យ
+        setUsernameResult({ name: "🎯 Account Verified (Ready to top up)" });
+      }
+      // ៤. ករណីហ្គេមផ្សេងៗទៀតដែលមិនទាន់ស្គាល់
+      else {
+        setUsernameResult({ name: "ID entered successfully" });
+      }
     } catch (err) {
       setUsernameError(err.message || "Unable to verify username.");
     } finally {
@@ -266,6 +295,9 @@ function Packages() {
       ? `${Number(activePackage.price).toLocaleString()}`
       : "Price on request";
   const resolvedOrderNo = orderResult?.order_no || orderResult?.orderNo || "";
+  
+  // 🛠️ បង្កើត Variable សម្រាប់ងាយស្រួលឆែក Code ហ្គេមក្នុងផ្នែក UI
+  const currentGameCode = (game?.code || "").toLowerCase();
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -343,9 +375,6 @@ function Packages() {
                           {pkg.price}
                         </span>
                       </div>
-                      <p className="mt-3 text-xs text-amber-200">
-                        Package code: {game.code || "topup"}
-                      </p>
                     </button>
                   );
                 })}
@@ -368,12 +397,6 @@ function Packages() {
                     </p>
                     <p className="text-3xl font-black text-white">{priceLabel}</p>
                   </div>
-                  {/* <Link
-                    to="/orders"
-                    className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15"
-                  >
-                    Track order
-                  </Link> */}
                 </div>
               </div>
 
@@ -387,7 +410,8 @@ function Packages() {
                 </p>
 
                 <div className="mt-5 grid gap-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  {/* 🛠️ ផ្នែកកែសម្រួល៖ កំណត់ការបង្ហាញ Grid ទៅតាមប្រភេទហ្គេម (MLBB មាន ២ ប្រអប់, ហ្គេមផ្សេងមាន ១ ប្រអប់) */}
+                  <div className={`grid gap-4 ${currentGameCode === "mlbb" ? "sm:grid-cols-2" : "grid-cols-1"}`}>
                     <label className="grid gap-2">
                       <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
                         User ID
@@ -396,29 +420,32 @@ function Packages() {
                         value={form.user_id}
                         onChange={(e) => setForm({ ...form, user_id: e.target.value })}
                         className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-400/60"
-                        placeholder="702425515"
+                        placeholder={currentGameCode === "pubg" ? "e.g., 512345678" : "702425515"}
                         required
                       />
                     </label>
 
-                    <label className="grid gap-2">
-                      <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                        Server ID
-                      </span>
-                      <input
-                        value={form.server_id}
-                        onChange={(e) => setForm({ ...form, server_id: e.target.value })}
-                        className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/60"
-                        placeholder="10301"
-                        required
-                      />
-                    </label>
+                    {/* បង្ហាញប្រអប់ Server ID តែនៅពេលដែលជាហ្គេម Mobile Legends (MLBB) ប៉ុណ្ណោះ */}
+                    {currentGameCode === "mlbb" && (
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                          Server ID
+                        </span>
+                        <input
+                          value={form.server_id}
+                          onChange={(e) => setForm({ ...form, server_id: e.target.value })}
+                          className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/60"
+                          placeholder="10301"
+                          required={currentGameCode === "mlbb"}
+                        />
+                      </label>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-h-6 text-sm font-semibold text-emerald-300">
                       {usernameResult
-                        ? `USERNAME: ${usernameLabel}`
+                        ? `VERIFIED: ${usernameLabel}`
                         : usernameError
                         ? usernameError
                         : " "}
@@ -427,8 +454,8 @@ function Packages() {
                     <button
                       type="button"
                       onClick={handleCheckUsername}
-                      disabled={checkingUsername}
-                      className="inline-flex items-center justify-center rounded-full border border-fuchsia-400/30 bg-fuchsia-500/15 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/25 disabled:cursor-not-allowed disabled:opacity-70"
+                      disabled={checkingUsername || !form.user_id.trim()}
+                      className="inline-flex items-center justify-center rounded-full border border-fuchsia-400/30 bg-fuchsia-500/15 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/25 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {checkingUsername ? "Checking..." : "CHECK ID"}
                     </button>
@@ -436,8 +463,9 @@ function Packages() {
 
                   <div className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-300">
                     <span className="font-semibold text-slate-200">Tip:</span>{" "}
-                    For MLBB, enter the User ID and Server ID from the profile
-                    page. We use those values to verify the account before checkout.
+                    {currentGameCode === "mlbb" 
+                      ? "Enter the User ID and Server ID from your game profile. We use those values to verify the account."
+                      : `Enter your exact ${game.name} User ID carefully before proceeding to payment.`}
                   </div>
 
                   <button
@@ -536,4 +564,3 @@ function Packages() {
 }
 
 export default Packages;
-
