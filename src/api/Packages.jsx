@@ -11,10 +11,13 @@ function Packages() {
   const [error, setError] = useState("");
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [form, setForm] = useState({
-    player_id: "",
-    zone_id: "",
+    user_id: "",
+    server_id: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameResult, setUsernameResult] = useState(null);
+  const [usernameError, setUsernameError] = useState("");
   const [orderResult, setOrderResult] = useState(null);
   const [paymentResult, setPaymentResult] = useState(null);
   const [paymentUrl, setPaymentUrl] = useState("");
@@ -67,6 +70,11 @@ function Packages() {
     });
   }, [game]);
 
+  useEffect(() => {
+    setUsernameResult(null);
+    setUsernameError("");
+  }, [form.user_id, form.server_id]);
+
   const activePackage = useMemo(
     () => game?.packages?.find((pkg) => String(pkg.id) === String(selectedPackage)),
     [game, selectedPackage]
@@ -78,6 +86,42 @@ function Packages() {
 
   const checkoutUrl = paymentResult?.checkout_url || paymentUrl;
   const packageCount = game?.packages?.length || 0;
+  const usernameLabel = usernameResult?.username || usernameResult?.name || "-";
+
+  async function handleCheckUsername() {
+    if (!game?.code || !form.user_id.trim() || !form.server_id.trim()) {
+      setUsernameError("Please enter both User ID and Server ID first.");
+      setUsernameResult(null);
+      return;
+    }
+
+    try {
+      setCheckingUsername(true);
+      setUsernameError("");
+      setUsernameResult(null);
+
+      const response = await fetch(
+        `https://api.isan.eu.org/nickname/ml?id=${encodeURIComponent(form.user_id.trim())}&zone=${encodeURIComponent(form.server_id.trim())}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Server connection failed.");
+      }
+
+      const data = await response.json();
+      const result = data?.data ?? data ?? {};
+
+      if (!result?.name) {
+        throw new Error("Account not found.");
+      }
+
+      setUsernameResult(result);
+    } catch (err) {
+      setUsernameError(err.message || "Unable to verify username.");
+    } finally {
+      setCheckingUsername(false);
+    }
+  }
 
   async function copyKhqr() {
     const value =
@@ -177,8 +221,8 @@ function Packages() {
       const payload = {
         game_code: game?.code,
         package_id: Number(selectedPackage),
-        player_id: form.player_id,
-        zone_id: form.zone_id,
+        player_id: form.user_id,
+        zone_id: form.server_id,
         payment_method: "khqr",
       };
 
@@ -343,27 +387,58 @@ function Packages() {
                 </p>
 
                 <div className="mt-5 grid gap-4">
-                  <label className="grid gap-2">
-                    <span className="text-sm text-slate-300">Player ID</span>
-                    <input
-                      value={form.player_id}
-                      onChange={(e) => setForm({ ...form, player_id: e.target.value })}
-                      className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-400/60"
-                      placeholder="Your in-game player ID"
-                      required
-                    />
-                  </label>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="grid gap-2">
+                      <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        User ID
+                      </span>
+                      <input
+                        value={form.user_id}
+                        onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+                        className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-400/60"
+                        placeholder="702425515"
+                        required
+                      />
+                    </label>
 
-                  <label className="grid gap-2">
-                    <span className="text-sm text-slate-300">Zone ID</span>
-                    <input
-                      value={form.zone_id}
-                      onChange={(e) => setForm({ ...form, zone_id: e.target.value })}
-                      className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/60"
-                      placeholder="Your zone / server ID"
-                      required
-                    />
-                  </label>
+                    <label className="grid gap-2">
+                      <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        Server ID
+                      </span>
+                      <input
+                        value={form.server_id}
+                        onChange={(e) => setForm({ ...form, server_id: e.target.value })}
+                        className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/60"
+                        placeholder="10301"
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-h-6 text-sm font-semibold text-emerald-300">
+                      {usernameResult
+                        ? `USERNAME: ${usernameLabel}`
+                        : usernameError
+                        ? usernameError
+                        : " "}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleCheckUsername}
+                      disabled={checkingUsername}
+                      className="inline-flex items-center justify-center rounded-full border border-fuchsia-400/30 bg-fuchsia-500/15 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/25 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {checkingUsername ? "Checking..." : "CHECK ID"}
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-300">
+                    <span className="font-semibold text-slate-200">Tip:</span>{" "}
+                    For MLBB, enter the User ID and Server ID from the profile
+                    page. We use those values to verify the account before checkout.
+                  </div>
 
                   <button
                     type="submit"
@@ -461,3 +536,4 @@ function Packages() {
 }
 
 export default Packages;
+
