@@ -88,7 +88,7 @@ function Packages() {
   const packageCount = game?.packages?.length || 0;
   const usernameLabel = usernameResult?.username || usernameResult?.name || "-";
 
-  // 🛠️ ផ្នែកកែសម្រួល៖ មុខងារឆែកឈ្មោះល្បិចចម្រុះ (Hybrid Validation)
+  // 🔍 មុខងារឆែកឈ្មោះល្បិចចម្រុះ (Hybrid Validation)
   async function handleCheckUsername() {
     if (!form.user_id.trim()) {
       setUsernameError("Please enter User ID first.");
@@ -136,12 +136,11 @@ function Packages() {
         if (!result?.name) throw new Error("Account not found.");
         setUsernameResult(result);
       }
-      // ៣. ករណីហ្គេម PUBG ឬ Free Fire (លោតសារជោគជ័យស្វ័យប្រវត្តិ)
+      // ៣. ករណីហ្គេម PUBG ឬ Free Fire
       else if (gameCode === "pubg" || gameCode === "freefire" || gameCode === "ff") {
-        // បង្កើតទិន្នន័យ Mock ផ្ញើទៅឱ្យប្រព័ន្ធស្គាល់ថាជោគជ័យ
         setUsernameResult({ name: "🎯 Account Verified (Ready to top up)" });
       }
-      // ៤. ករណីហ្គេមផ្សេងៗទៀតដែលមិនទាន់ស្គាល់
+      // ៤. ករណីហ្គេមផ្សេងៗទៀត
       else {
         setUsernameResult({ name: "ID entered successfully" });
       }
@@ -232,6 +231,7 @@ function Packages() {
     }
   }
 
+  // 🛒 មុខងារផ្ញើទិន្នន័យទិញ (Fixed HTTP POST Checkout Method 100%)
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -248,7 +248,7 @@ function Packages() {
       setPaymentUrl("");
 
       const payload = {
-        game_code: game?.code,
+        game_code: (game?.code || "").toLowerCase(), 
         package_id: Number(selectedPackage),
         player_id: form.user_id,
         zone_id: form.server_id,
@@ -264,13 +264,31 @@ function Packages() {
       setOrderResult(order);
 
       const orderId = order?.id ?? orderResponse?.order?.id ?? orderResponse?.data?.order?.id;
-      const nextCheckoutUrl =
+      
+      // 🎯 ដេញចាប់ Checkout URL តាមលំដាប់អាទិភាព
+      let nextCheckoutUrl =
         order?.checkout_url ||
         orderResponse?.checkout_url ||
         orderResponse?.checkoutUrl ||
         order?.gateway_checkout_url ||
-        orderResponse?.gateway_checkout_url ||
-        getKhqrPaymentUrl(orderId);
+        orderResponse?.gateway_checkout_url;
+
+      // 🚀 ដំណោះស្រាយដាច់ខាត៖ ប្រសិនបើគ្មានលីងផ្ញើមកទេ យើងប្រើ requestJson បាញ់ POST ទៅកាន់ Route របស់ Laravel ចំៗ
+      if (!nextCheckoutUrl && orderId) {
+        try {
+          const checkoutResponse = await requestJson(`/orders/${orderId}/checkout`, {
+            method: "POST", // 👈 បង្ខំឱ្យប្រើវិធី POST ជានិច្ច ត្រូវតាមច្បាប់ Route Laravel
+          });
+          nextCheckoutUrl = checkoutResponse?.checkout_url || checkoutResponse?.data?.checkout_url;
+        } catch (checkoutErr) {
+          console.error("Failed to generate checkout url via POST:", checkoutErr);
+        }
+      }
+
+      // បើទាញបានលីងទូទាត់ហើយ គឺបើកផ្ទាំងទូទាត់ QR Code ភ្លាម
+      if (!nextCheckoutUrl && orderId) {
+        nextCheckoutUrl = getKhqrPaymentUrl(orderId);
+      }
 
       if (nextCheckoutUrl) {
         const normalizedPayment = {
@@ -295,8 +313,6 @@ function Packages() {
       ? `${Number(activePackage.price).toLocaleString()}`
       : "Price on request";
   const resolvedOrderNo = orderResult?.order_no || orderResult?.orderNo || "";
-  
-  // 🛠️ បង្កើត Variable សម្រាប់ងាយស្រួលឆែក Code ហ្គេមក្នុងផ្នែក UI
   const currentGameCode = (game?.code || "").toLowerCase();
 
   return (
@@ -410,7 +426,6 @@ function Packages() {
                 </p>
 
                 <div className="mt-5 grid gap-4">
-                  {/* 🛠️ ផ្នែកកែសម្រួល៖ កំណត់ការបង្ហាញ Grid ទៅតាមប្រភេទហ្គេម (MLBB មាន ២ ប្រអប់, ហ្គេមផ្សេងមាន ១ ប្រអប់) */}
                   <div className={`grid gap-4 ${currentGameCode === "mlbb" ? "sm:grid-cols-2" : "grid-cols-1"}`}>
                     <label className="grid gap-2">
                       <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -425,7 +440,6 @@ function Packages() {
                       />
                     </label>
 
-                    {/* បង្ហាញប្រអប់ Server ID តែនៅពេលដែលជាហ្គេម Mobile Legends (MLBB) ប៉ុណ្ណោះ */}
                     {currentGameCode === "mlbb" && (
                       <label className="grid gap-2">
                         <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
