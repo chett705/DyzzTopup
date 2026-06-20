@@ -209,7 +209,7 @@ function PackageManagement() {
               onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
               className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
               placeholder="Weekly Diamond Pack"
-              required
+              // required
             />
           </label>
 

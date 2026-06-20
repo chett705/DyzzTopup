@@ -21,6 +21,7 @@ adminApi.interceptors.request.use(
 );
 
 function unwrap(response) {
+  // 🎯 កែសម្រួល៖ ធានាការទាញយក data ឱ្យត្រូវស្រទាប់ មិនឱ្យមានបញ្ហា Empty Array ក្នុង Admin ឡើយ
   return response?.data?.data ?? response?.data ?? response;
 }
 
@@ -57,4 +58,22 @@ export async function updateAdminOrder(orderId, payload) {
 export async function createAdminGame(payload) {
   const response = await adminApi.post("/admin/games", payload);
   return unwrap(response);
+}
+
+/**
+ * ⚡ មុខងារចុចបង្ខំឱ្យជោគជ័យ (Bypass Success)
+ * 🎯 ដំណោះស្រាយ៖ លុបពាក្យ /admin ដែលជាន់គ្នាចេញ ឱ្យត្រូវគ្នាបេះបិទជាមួយ Laravel Route 
+ */
+export async function manualVerifyOrder(orderId) {
+  const response = await adminApi.post(`/admin/orders/${encodeURIComponent(orderId)}/manual-verify`);
+  return unwrap(response);
+}
+
+/**
+ * ❌ មុខងារចុចលុប Order ពី Database
+ * 🎯 ដំណោះស្រាយ៖ លុបពាក្យ /admin ដែលជាន់គ្នាចេញដូចគ្នា ដើម្បីកុំឱ្យលោត Error 404
+ */
+export async function deleteAdminOrder(orderId) {
+  const response = await adminApi.delete(`/admin/orders/${encodeURIComponent(orderId)}`);
+  return response?.data ?? response;
 }

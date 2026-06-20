@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
-import { createAdminGame, fetchAdminDashboard, updateAdminOrder } from "../services/adminService"; 
-// 🎯 ចំណាំ៖ ប្រសិនបើក្នុង adminService.js បងដាក់ឈ្មោះប្រព័ន្ធដូរហ្គេមថា updateAdminGame សូមប្ដូរឈ្មោះទាញយកខាងលើនេះឱ្យត្រូវគ្នាណាcharបង
-import { updateAdminPackage } from "../services/adminService"; 
-
-// បង្កើតមុខងារជំនួយសម្រាប់បាញ់ទៅ Update Game (ករណីមិនទាន់មានក្នុង adminService.js)
+import React, { useEffect, useState } from "react";
+import { createAdminGame, fetchAdminDashboard, updateAdminOrder, updateAdminPackage } from "../services/adminService"; 
 import { adminApi } from "../services/adminService";
+
+// 🚀 មុខងារជំនួយសម្រាប់បាញ់ទៅ Update Game តាមវិធី PATCH ទៅកាន់ Laravel
 async function localUpdateAdminGame(gameId, payload) {
   const response = await adminApi.patch(`/admin/games/${encodeURIComponent(gameId)}`, payload);
   return response?.data;
@@ -43,7 +41,7 @@ function GameManagement() {
           nextDrafts[game.id] = {
             name: game.name || "",
             code: game.code || "",
-            is_active: Boolean(game.is_active),
+            is_active: game.is_active !== undefined ? Boolean(game.is_active) : true,
           };
         });
         setDrafts(nextDrafts);
@@ -89,13 +87,14 @@ function GameManagement() {
       const createdGame = result?.game || result?.data?.game || result;
       if (createdGame) {
         setGames((current) => [createdGame, ...current]);
-        // ថែមចូលក្នុង Draft ដែរដើម្បីឱ្យអាចកែប្រែបានភ្លាមៗ
+        
+        // 🎯 ថែមចូលក្នុង Draft ភ្លាមៗជាមួយប្រព័ន្ធការពារតម្លៃ undefined 
         setDrafts((current) => ({
           ...current,
           [createdGame.id]: {
             name: createdGame.name || "",
             code: createdGame.code || "",
-            is_active: Boolean(createdGame.is_active),
+            is_active: createdGame.is_active !== undefined ? Boolean(createdGame.is_active) : true,
           },
         }));
       }
@@ -109,7 +108,7 @@ function GameManagement() {
     }
   }
 
-  // 💾 មុខងារថ្មី៖ រុញទិន្នន័យដែលកែប្រែរួចទៅរក្សាទុកក្នុង Database (Save Game)
+  // 💾 មុខងាររុញទិន្នន័យដែលកែប្រែរួចទៅរក្សាទុកក្នុង Database (Save Game)
   async function saveGame(id) {
     const draft = drafts[id];
     try {
@@ -117,7 +116,7 @@ function GameManagement() {
       setError("");
       setMessage("");
 
-      // 🚀 បាញ់ទៅកាន់ផ្លូវ PATCH លើ Laravel
+      // 🚀 បាញ់ទៅកាន់ផ្លូវ PATCH លើ Laravel ផ្ញើ ID លេខ 3 ទៅយ៉ាងត្រឹមត្រូវ
       const result = await localUpdateAdminGame(id, draft);
       const updated = (result?.game || result?.data) ?? result;
 
@@ -173,11 +172,12 @@ function GameManagement() {
             />
           </label>
 
-          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 mt-auto h-[50px]">
+          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 mt-auto h-[50px] cursor-pointer select-none">
             <input
               type="checkbox"
               checked={form.is_active}
               onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+              className="w-4 h-4 accent-cyan-400"
             />
             <span className="text-sm font-semibold">Active Status</span>
           </label>
@@ -187,7 +187,7 @@ function GameManagement() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60 hover:bg-slate-200 transition"
           >
             {saving ? "Creating..." : "Create Game"}
           </button>
@@ -230,11 +230,12 @@ function GameManagement() {
                     />
                   </label>
 
-                  <label className="flex items-center gap-3 rounded-xl border border-white/5 bg-slate-950/20 px-3 py-2">
+                  <label className="flex items-center gap-3 rounded-xl border border-white/5 bg-slate-950/20 px-3 py-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
-                      checked={Boolean(draft.is_active)}
+                      checked={draft.is_active !== undefined ? Boolean(draft.is_active) : false}
                       onChange={(e) => updateDraft(game.id, "is_active", e.target.checked)}
+                      className="w-4 h-4 accent-cyan-400"
                     />
                     <span className="text-xs font-semibold text-slate-300">Active</span>
                   </label>
