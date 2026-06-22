@@ -34,40 +34,17 @@ function Game() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#1f3c88_0%,_#0f172a_40%,_#050816_100%)] text-white">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 px-5 py-5 backdrop-blur md:flex-row md:items-center md:justify-between">
+      <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
+        <header className="mx-auto flex max-w-7xl flex-col gap-4 rounded-3xl border border-white/10 bg-slate-950/80 px-5 py-5 shadow-2xl shadow-black/20 backdrop-blur md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
               Dyzz Diamond Top Up
             </p>
-            {/* <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              Fast, clean, and secure
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">
-              Pick a game, choose a package, pay with KHQR
-            </p> */}
           </div>
-
-          {/* <div className="grid grid-cols-3 gap-3 text-center text-xs sm:text-sm">
-            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3">
-              Instant
-              <div className="mt-1 font-semibold text-emerald-300">
-                Delivery
-              </div>
-            </div>
-            <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3">
-              Safe
-              <div className="mt-1 font-semibold text-cyan-200">Checkout</div>
-            </div>
-            <div className="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-400/10 px-4 py-3">
-              Live
-              <div className="mt-1 font-semibold text-fuchsia-200">
-                Tracking
-              </div>
-            </div>
-          </div> */}
         </header>
+      </div>
 
+      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 pb-6 pt-28 sm:px-6 lg:px-8">
         <main className="flex-1">
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -88,17 +65,27 @@ function Game() {
               No games found yet.
             </div>
           ) : (
-            <div className="grid gap-5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 items-stretch">
-              {games.map((game) => (
-                <Link
-                  key={game.id}
-                  to={`/games/${game.id}`}
-                  state={{ game }}
-                  className="group"
-                >
-                  <article className="h-full overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-2xl shadow-black/20 transition duration-300 group-hover:-translate-y-1 group-hover:border-cyan-400/40 group-hover:shadow-cyan-500/10">
-                    <div className="flex aspect-square items-center flex-col justify-between bg-gradient-to-br from-cyan-500/20 via-slate-950 to-fuchsia-500/15 p-4 h-full">
-                      {/* <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="overflow-hidden my-4 rounded-3xl border border-white/10 bg-white/5 shadow-lg shadow-black/20">
+                <img
+                  src="/bannerlistgame.png"
+                  alt="Games banner"
+                  className="h-48 w-full object-cover sm:h-84 lg:h-90"
+                  loading="lazy"
+                />
+              </div>
+              <h1 className="text-3xl font-black text-center my-8">Fast Top Up</h1>
+              <div className="grid gap-5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 items-stretch">
+                {games.map((game) => (
+                  <Link
+                    key={game.id}
+                    to={`/games/${game.id}`}
+                    state={{ game }}
+                    className="group"
+                  >
+                    <article className="h-full overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-2xl shadow-black/20 transition duration-300 group-hover:-translate-y-1 group-hover:border-cyan-400/40 group-hover:shadow-cyan-500/10">
+                      <div className="flex aspect-square items-center flex-col justify-between bg-gradient-to-br from-cyan-500/20 via-slate-950 to-fuchsia-500/15 p-4 h-full">
+                        {/* <div className="flex items-start justify-between gap-2">
                         <div className="rounded-full border border-cyan-400/20 bg-slate-950/60 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-200 truncate max-w-[60%]">
                           {game.code || "game"}
                         </div>
@@ -113,22 +100,25 @@ function Game() {
                         </div>
                       </div> */}
 
-                      <div className="my-4">
-                        
-                        <h3 className="mt-1 text-xl sm:text-2xl font-black text-white tracking-wide line-clamp-2">
-                          {game.name}
-                        </h3>
-                      </div>
+                        <div className="my-4">
+                          <h3 className="mt-1 text-xl sm:text-2xl font-black text-white tracking-wide line-clamp-2">
+                            {game.name}
+                          </h3>
+                        </div>
 
-                      <div className="flex items-center justify-end text-xs">
-                       <p className="text-[10px] border px-2.5 py-1 rounded-4xl text-center uppercase tracking-[0.3em] text-slate-400 font-medium">
-                          Top up
-                        </p>
+                        <div className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition group-hover:border-cyan-400/40 group-hover:bg-cyan-400/10">
+                          <span className="uppercase text-center tracking-[0.2em] text-slate-300">
+                            Top up
+                          </span>
+                          {/* <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg transition group-hover:bg-cyan-400/25">
+                            
+                          </span> */}
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                </Link>
-              ))}
+                    </article>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </main>
