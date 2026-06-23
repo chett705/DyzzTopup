@@ -221,7 +221,32 @@ function OrderManagement() {
       </div>
 
       {loading ? (
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-300">Loading orders...</div>
+        <div className="space-y-4" aria-busy="true" aria-live="polite">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article
+              key={index}
+              className="animate-pulse rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="h-4 w-40 rounded-full bg-white/10" />
+                <div className="h-8 w-24 rounded-full bg-white/10" />
+              </div>
+
+              <div className="mt-4 grid gap-2 border-y border-white/5 py-3 sm:grid-cols-2 lg:grid-cols-5">
+                {Array.from({ length: 5 }).map((__, rowIndex) => (
+                  <div key={rowIndex} className="h-4 rounded-full bg-slate-950/40" />
+                ))}
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <div className="h-9 w-28 rounded-full bg-white/10" />
+                <div className="h-9 w-24 rounded-full bg-white/10" />
+                <div className="h-9 w-28 rounded-full bg-white/10" />
+                <div className="h-9 w-24 rounded-full bg-white/10" />
+              </div>
+            </article>
+          ))}
+        </div>
       ) : error ? (
         <div className="rounded-3xl border border-red-400/30 bg-red-500/10 p-6 text-red-100">{error}</div>
       ) : orders.length === 0 ? (
@@ -246,7 +271,7 @@ function OrderManagement() {
                   </label>
                 </div>
 
-                {/* 📊 ផ្ទាំងបង្ហាញព័ត៌មានលម្អិត (បានបន្ថែមប្រអប់ Username រួចរាល់) */}
+            
                 <div className="mt-4 grid gap-2 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-5 border-y border-white/5 py-3 my-3">
                   <div>Order No: <span className="font-mono text-cyan-200 text-xs">{order.order_no || order.id || "-"}</span></div>
                   <div>Player ID: <span className="font-semibold">{order.player_id || "-"}</span></div>

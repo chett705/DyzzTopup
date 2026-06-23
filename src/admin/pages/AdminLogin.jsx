@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
 
 function AdminLogin() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAdminAuth();
+  const { login } = useAdminAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,10 +21,6 @@ function AdminLogin() {
     } finally {
       setLoading(false);
     }
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/admin" replace />;
   }
 
   return (
