@@ -86,8 +86,9 @@ function Packages() {
       ? `$${Number(activePackage.price).toFixed(2)}`
       : "$0.00";
 
+  // 🎯 ដំណោះស្រាយគន្លឹះទី១៖ ប្រើ .includes("mlbb") ដើម្បីឱ្យលោតប្រអប់ Zone ID មកវិញគ្រប់ខ្សែហ្គេម MLBB ទាំងអស់
   const showZoneInput =
-    currentGameCode === "mlbb" ||
+    currentGameCode.includes("mlbb") ||
     currentGameCode === "mcgg" ||
     currentGameCode === "la" ||
     currentGameCode === "lifeafter";
@@ -202,7 +203,6 @@ function Packages() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white relative">
-      {/* 🎯 បន្ថែម pb-32 នៅទីនេះដើម្បីកុំឱ្យបុកបាតអេក្រង់ទូរស័ព្ទ */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pb-32">
         <Link
           to="/"
@@ -231,19 +231,22 @@ function Packages() {
               />
             </div>
 
-            {/* 📊 Layout Grid៖ បំបែកជួរឆ្លាតវៃលើ Desktop (2:1 Grid layout) */}
+            {/* Layout Grid */}
             <div className="mt-6 grid gap-6 grid-cols-1 lg:grid-cols-3 items-start">
               
-              {/* 🛑 ផ្នែកខាងឆ្វេង (គណនីយ និង បញ្ជីកាតពេជ្រ) */}
+              {/* Left Side (Form & Packages) */}
               <div className="lg:col-span-2 space-y-6">
                 
                 {/* Game Header */}
                 <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/15 text-center shrink-0">
-                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100">
+                  
+                  {/* 🎯 ដំណោះស្រាយគន្លឹះទី២៖ បន្ថែម p-2, break-words, text-[10px] ដើម្បីឱ្យអក្សរ MLBB_EXCLUSIVE រត់ Fit នៅក្នុងប្រអប់ការ៉េ */}
+                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/15 text-center shrink-0 p-2 overflow-hidden">
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-cyan-100 break-words max-w-full block leading-tight">
                       {game.code || "game"}
                     </span>
                   </div>
+
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-black">{game.name}</h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-400">
@@ -271,7 +274,7 @@ function Packages() {
                             setUsernameError("");
                           }}
                           className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/60 transition"
-                          placeholder={currentGameCode === "mlbb" ? "702425515" : "Enter ID"}
+                          placeholder={currentGameCode.includes("mlbb") ? "702425515" : "Enter ID"}
                           required
                         />
                       </label>
@@ -354,7 +357,7 @@ function Packages() {
                 </section>
               </div>
 
-              {/* 🛑 ផ្នែកខាងស្តាំ (កាតសង្ខេបតម្លៃ និង ប៊ូតុងទូទាត់លុយ) */}
+              {/* Right Side (Summary Card) */}
               <aside className="space-y-6 lg:col-span-1">
                 <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/15 to-fuchsia-500/10 p-5 sticky top-6">
                   <div className="rounded-2xl bg-white/10 p-4">
@@ -423,7 +426,6 @@ function Packages() {
               <p className="text-xs text-slate-400 mt-1">Please scan the KHQR code below to complete payment.</p>
             </div>
 
-            {/* Responsive Iframe Container */}
             <div className="overflow-hidden rounded-2xl border border-white/5 bg-white h-[480px] sm:h-[520px] w-full shadow-inner relative">
               <iframe src={checkoutUrl} title="KHQR Checkout Window" className="w-full h-full border-none" />
             </div>
