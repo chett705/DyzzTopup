@@ -1,0 +1,1 @@
+Sitemap: https://dyzz-store.vercel.app/sitemap.xml
