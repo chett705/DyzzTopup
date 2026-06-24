@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import Seo from "../components/Seo";
 import { requestJson } from "./api";
 
 function Orders() {
@@ -13,7 +14,6 @@ function Orders() {
 
   useEffect(() => {
     if (params.orderNo) {
-      setOrderNo(params.orderNo);
       if (skipNextAutoFetchRef.current) {
         skipNextAutoFetchRef.current = false;
         return;
@@ -51,6 +51,14 @@ function Orders() {
 
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-6 text-white sm:px-6 lg:px-8">
+      <Seo
+        title="Order Tracking"
+        description="Track your Dyzz Store game top up order status securely."
+        canonicalPath="/orders"
+        image="/bannerlistgame.png"
+        noIndex
+        keywords="order tracking, dyzz store, game top up order status"
+      />
       <div className="mx-auto max-w-3xl">
         <Link
           to="/"
@@ -70,7 +78,7 @@ function Orders() {
 
           <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3 sm:flex-row">
             <input
-              value={orderNo}
+              value={params.orderNo || orderNo}
               onChange={(e) => setOrderNo(e.target.value)}
               placeholder="Order ID"
               className="flex-1 rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/60"

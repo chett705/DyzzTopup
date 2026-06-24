@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
-import { getKhqrPaymentUrl, requestJson } from "./api";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import Seo from "../components/Seo";
+import { requestJson } from "./api";
 
 function Packages() {
   const { id } = useParams();
-  const location = useLocation();
 
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,6 @@ function Packages() {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameResult, setUsernameResult] = useState(null);
   const [usernameError, setUsernameError] = useState("");
-  const [orderResult, setOrderResult] = useState(null);
   const [paymentResult, setPaymentResult] = useState(null);
   const [paymentUrl, setPaymentUrl] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -23,7 +22,7 @@ function Packages() {
   const [showQrModal, setShowQrModal] = useState(false);
   
   // 🎯 State សម្រាប់គ្រប់គ្រងផ្ទាំង Alert ជូនដំណឹងពី Weekly Diamond Pass (Show One Time per session)
-  const [showWeeklyAlert, setShowWeeklyAlert] = useState(false);
+  const [weeklyAlertDismissed, setWeeklyAlertDismissed] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -39,7 +38,6 @@ function Packages() {
 
         if (!ignore) {
           setGame(matchedGame);
-          setOrderResult(null);
           setPaymentResult(null);
           setPaymentUrl("");
           setAcceptedTerms(false);
@@ -68,42 +66,42 @@ function Packages() {
   }, [game]);
 
   // 🎯 ឆែកលក្ខខណ្ឌលោត Alert Weekly Pass សម្រាប់តែខ្សែហ្គេម MLBB 
-  useEffect(() => {
-    if (!game) return;
-    const hasSeenWeekly = sessionStorage.getItem(`seen_weekly_alert_${id}`);
-    const isMlbbGame = (game.code || "").toLowerCase().includes("mlbb");
-    
-    if (!hasSeenWeekly && isMlbbGame) {
-      setShowWeeklyAlert(true);
+
+  const selectedPackageId = useMemo(() => {
+    if (!sortedPackages.length) return null;
+    if (selectedPackage) {
+      const exists = sortedPackages.some(
+        (pkg) => String(pkg.id) === String(selectedPackage),
+      );
+      if (exists) return String(selectedPackage);
     }
-  }, [game, id]);
+    return String(sortedPackages[0].id);
+  }, [sortedPackages, selectedPackage]);
+
+  const isMlbbGame = (game?.code || "").toLowerCase().includes("mlbb");
+  const showWeeklyAlert =
+    Boolean(game) &&
+    isMlbbGame &&
+    !weeklyAlertDismissed &&
+    !sessionStorage.getItem(`seen_weekly_alert_${id}`);
 
   const handleCloseWeeklyAlert = () => {
     sessionStorage.setItem(`seen_weekly_alert_${id}`, "true");
-    setShowWeeklyAlert(false);
+    setWeeklyAlertDismissed(true);
   };
-
-  useEffect(() => {
-    if (!sortedPackages.length) return;
-    setSelectedPackage((current) => {
-      if (current) {
-        const exists = sortedPackages.some(
-          (pkg) => String(pkg.id) === String(current),
-        );
-        if (exists) return current;
-      }
-      return String(sortedPackages[0].id);
-    });
-  }, [sortedPackages]);
 
   const activePackage = useMemo(
     () =>
-      sortedPackages.find((pkg) => String(pkg.id) === String(selectedPackage)),
-    [sortedPackages, selectedPackage],
+      sortedPackages.find((pkg) => String(pkg.id) === String(selectedPackageId)),
+    [sortedPackages, selectedPackageId],
   );
 
   const checkoutUrl = paymentResult?.checkout_url || paymentUrl;
   const packageCount = game?.packages?.length || 0;
+  const pageTitle = game?.name ? `${game.name} Top Up` : "Game Packages";
+  const pageDescription = game?.name
+    ? `Choose ${game.name} diamond top up packages in Cambodia with secure KHQR payment and fast delivery.`
+    : "Browse game top up packages in Cambodia with secure KHQR payment and fast delivery.";
 
   const usernameLabel = usernameResult?.player_name || usernameResult?.username || usernameResult?.name || usernameResult?.account_name || "-";
   const currentGameCode = (game?.code || "").toLowerCase();
@@ -189,7 +187,7 @@ function Packages() {
       return;
     }
 
-    if (!selectedPackage) {
+    if (!selectedPackageId) {
       setError("សូមជ្រើសរើសកញ្ចប់ពេជ្រដែលបងចង់ទិញ! (Please choose a package first.)");
       return;
     }
@@ -202,13 +200,12 @@ function Packages() {
     try {
       setSubmitting(true);
       setError("");
-      setOrderResult(null);
       setPaymentResult(null);
       setPaymentUrl("");
 
       const payload = {
         game_code: currentGameCode,
-        package_id: Number(selectedPackage),
+        package_id: Number(selectedPackageId),
         player_id: form.user_id,
         player_username: usernameResult?.username || usernameResult?.name || usernameResult?.player_name || "",
         zone_id: form.server_id,
@@ -220,17 +217,10 @@ function Packages() {
         body: JSON.stringify(payload),
       });
 
-      const order =
-        orderResponse?.order ??
-        orderResponse?.data?.order ??
-        orderResponse?.data ??
-        orderResponse;
-      setOrderResult(order);
-
       const nextCheckoutUrl =
         orderResponse?.checkout_url ||
         orderResponse?.data?.checkout_url ||
-        order?.gateway_checkout_url;
+        orderResponse?.order?.gateway_checkout_url;
 
       if (nextCheckoutUrl) {
         setPaymentResult({ checkout_url: nextCheckoutUrl });
@@ -246,6 +236,33 @@ function Packages() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white relative">
+      <Seo
+        title={pageTitle}
+        description={pageDescription}
+        canonicalPath={`/games/${id}`}
+        image="/banner.png"
+        keywords={`${game?.name || "game"} top up, diamond top up, khqr payment, dyzz store`}
+        schema={
+          game
+            ? {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                name: game.name,
+                description: pageDescription,
+                brand: {
+                  "@type": "Brand",
+                  name: "Dyzz Store",
+                },
+                offers: {
+                  "@type": "Offer",
+                  priceCurrency: "USD",
+                  price: activePackage?.price != null ? Number(activePackage.price).toFixed(2) : undefined,
+                  availability: "https://schema.org/InStock",
+                },
+              }
+            : null
+        }
+      />
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pb-32">
         <Link
           to="/"
@@ -369,7 +386,7 @@ function Packages() {
                 {/* Packages Selection Grid (រៀបដេញតាម sortedPackages ពីតូចទៅធំ) */}
                 <section className="grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
                   {sortedPackages.map((pkg) => {
-                    const isActive = String(pkg.id) === String(selectedPackage);
+                    const isActive = String(pkg.id) === String(selectedPackageId);
                     return (
                       <button
                         key={pkg.id}

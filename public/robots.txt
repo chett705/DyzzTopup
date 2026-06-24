@@ -1,1 +1,5 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /orders
+
 Sitemap: https://dyzz-store.vercel.app/sitemap.xml
