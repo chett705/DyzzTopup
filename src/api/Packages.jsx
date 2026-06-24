@@ -56,23 +56,31 @@ function Packages() {
     };
   }, [id]);
 
+  // 🎯 ដំណោះស្រាយ៖ តម្រៀបកញ្ចប់ពេជ្រពីតូចទៅធំ (Small to Big) ផ្អែកលើ diamond_amount
+  const sortedPackages = useMemo(() => {
+    if (!game?.packages) return [];
+    return [...game.packages].sort((a, b) => {
+      return Number(a.diamond_amount) - Number(b.diamond_amount);
+    });
+  }, [game]);
+
   useEffect(() => {
-    if (!game?.packages?.length) return;
+    if (!sortedPackages.length) return;
     setSelectedPackage((current) => {
       if (current) {
-        const exists = game.packages.some(
+        const exists = sortedPackages.some(
           (pkg) => String(pkg.id) === String(current),
         );
         if (exists) return current;
       }
-      return String(game.packages[0].id);
+      return String(sortedPackages[0].id);
     });
-  }, [game]);
+  }, [sortedPackages]);
 
   const activePackage = useMemo(
     () =>
-      game?.packages?.find((pkg) => String(pkg.id) === String(selectedPackage)),
-    [game, selectedPackage],
+      sortedPackages.find((pkg) => String(pkg.id) === String(selectedPackage)),
+    [sortedPackages, selectedPackage],
   );
 
   const checkoutUrl = paymentResult?.checkout_url || paymentUrl;
@@ -86,7 +94,7 @@ function Packages() {
       ? `$${Number(activePackage.price).toFixed(2)}`
       : "$0.00";
 
-  // 🎯 ដំណោះស្រាយគន្លឹះទី១៖ ប្រើ .includes("mlbb") ដើម្បីឱ្យលោតប្រអប់ Zone ID មកវិញគ្រប់ខ្សែហ្គេម MLBB ទាំងអស់
+  // ឆែកបង្ហាញប្រអប់ Server / Zone ID សម្រាប់គ្រប់ខ្សែ MLBB
   const showZoneInput =
     currentGameCode.includes("mlbb") ||
     currentGameCode === "mcgg" ||
@@ -146,8 +154,24 @@ function Packages() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    // 🎯 ដំណោះស្រាយ៖ ឆែក Validation បង្ខំឱ្យវាយ ID និងចុច Check ID មុនពេលបង់លុយ
+    if (!form.user_id.trim()) {
+      setError("សូមបំពេញ User ID / Player ID របស់បងជាមុនសិន! (Please enter User ID first.)");
+      return;
+    }
+
+    if (showZoneInput && !form.server_id.trim()) {
+      setError("សូមបំពេញ Server / Zone ID របស់បងជាមុនសិន! (Please enter Server ID.)");
+      return;
+    }
+
+    if (!usernameResult) {
+      setError("សូមចុចប៊ូតុង 'CHECK ID' ដើម្បីផ្ទៀងផ្ទាត់ឈ្មោះគណនីហ្គេមរបស់បងជាមុនសិន! (Please check ID first.)");
+      return;
+    }
+
     if (!selectedPackage) {
-      setError("Please choose a package first.");
+      setError("សូមជ្រើសរើសកញ្ចប់ពេជ្រដែលបងចង់ទិញ! (Please choose a package first.)");
       return;
     }
 
@@ -240,7 +264,7 @@ function Packages() {
                 {/* Game Header */}
                 <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur flex flex-col gap-4 sm:flex-row sm:items-center">
                   
-                  {/* 🎯 ដំណោះស្រាយគន្លឹះទី២៖ បន្ថែម p-2, break-words, text-[10px] ដើម្បីឱ្យអក្សរ MLBB_EXCLUSIVE រត់ Fit នៅក្នុងប្រអប់ការ៉េ */}
+                  {/* 🎯 រៀបចំ Padding, break-words, ទំហំអក្សរ ឱ្យអក្សរ MLBB_EXCLUSIVE រត់ Fit ក្នុងប្រអប់ការ៉េ */}
                   <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/15 text-center shrink-0 p-2 overflow-hidden">
                     <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-cyan-100 break-words max-w-full block leading-tight">
                       {game.code || "game"}
@@ -323,9 +347,9 @@ function Packages() {
                   </div>
                 </section>
 
-                {/* Packages Selection Grid */}
+                {/* Packages Selection Grid (រៀបដេញតាម sortedPackages ពីតូចទៅធំ) */}
                 <section className="grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
-                  {(game.packages || []).map((pkg) => {
+                  {sortedPackages.map((pkg) => {
                     const isActive = String(pkg.id) === String(selectedPackage);
                     return (
                       <button
@@ -414,7 +438,7 @@ function Packages() {
       {/* QR Code Modal Box */}
       {showQrModal && checkoutUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 sm:p-6">
-          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-center">
             <button
               onClick={() => setShowQrModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors text-xl font-bold p-1 cursor-pointer"
