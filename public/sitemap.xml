@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
-  <!-- ១. ទំព័រដើម (Home Page) -->
   <url>
     <loc>https://dyzz-store.vercel.app/</loc>
     <lastmod>2026-06-24</lastmod>
@@ -9,28 +8,11 @@
     <priority>1.0</priority>
   </url>
 
-  <!-- ២. ទំព័រផលិតផល (Product List) -->
   <url>
-    <loc>https://dyzz-store.vercel.app/products</loc>
+    <loc>https://dyzz-store.vercel.app/topup/games</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- ៣. ទំព័រប្រវត្តិរូប/គណនី (Profile Page) -->
-  <url>
-    <loc>https://dyzz-store.vercel.app/profile</loc>
-    <lastmod>2026-06-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
-  <!-- ៤. ទំព័រកន្ត្រកទិញទំនិញ (Cart Page) -->
-  <url>
-    <loc>https://dyzz-store.vercel.app/cart</loc>
-    <lastmod>2026-06-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.9</priority>
   </url>
 
 </urlset>
