@@ -158,7 +158,7 @@ function Game() {
                   <h4>Mobile Legends Exclusive</h4>
                 </div>
                 <p className="text-xs text-slate-300 mt-1 pl-5 leading-relaxed">
-                  ល្បឿនលឿនបំផុត **(Instant ចូលភ្លាមៗក្នុង ១ វិនាទី)** ក្រោយពេលបង់ប្រាក់រួចរាល់។
+                  ល្បឿនលឿនបំផុត **(Instant ចូលភ្លាមៗក្នុង ១ វិនាទី) ក្រោយពេលបង់ប្រាក់រួចរាល់។
                 </p>
               </div>
 
@@ -169,7 +169,7 @@ function Game() {
                   <h4>Mobile Legends (Regular)</h4>
                 </div>
                 <p className="text-xs text-slate-300 mt-1 pl-5 leading-relaxed">
-                  ល្បឿនធម្មតា **(រង់ចាំចន្លោះពី ១ ទៅ ៥ នាទី)** ប៉ុន្តែតម្លៃធូរថ្លៃជាងមុន។
+                  ល្បឿនធម្មតា (រង់ចាំចន្លោះពី ១ ទៅ ៥ នាទី) ប៉ុន្តែតម្លៃធូរថ្លៃជាងមុន។
                 </p>
               </div>
 

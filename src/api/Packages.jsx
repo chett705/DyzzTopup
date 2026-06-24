@@ -21,6 +21,9 @@ function Packages() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [showQrModal, setShowQrModal] = useState(false);
+  
+  // 🎯 State សម្រាប់គ្រប់គ្រងផ្ទាំង Alert ជូនដំណឹងពី Weekly Diamond Pass (Show One Time per session)
+  const [showWeeklyAlert, setShowWeeklyAlert] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -56,13 +59,29 @@ function Packages() {
     };
   }, [id]);
 
-  // 🎯 ដំណោះស្រាយ៖ តម្រៀបកញ្ចប់ពេជ្រពីតូចទៅធំ (Small to Big) ផ្អែកលើ diamond_amount
+  // 🎯 តម្រៀបកញ្ចប់ពេជ្រពីតូចទៅធំ (Small to Big) ផ្អែកលើ diamond_amount
   const sortedPackages = useMemo(() => {
     if (!game?.packages) return [];
     return [...game.packages].sort((a, b) => {
       return Number(a.diamond_amount) - Number(b.diamond_amount);
     });
   }, [game]);
+
+  // 🎯 ឆែកលក្ខខណ្ឌលោត Alert Weekly Pass សម្រាប់តែខ្សែហ្គេម MLBB 
+  useEffect(() => {
+    if (!game) return;
+    const hasSeenWeekly = sessionStorage.getItem(`seen_weekly_alert_${id}`);
+    const isMlbbGame = (game.code || "").toLowerCase().includes("mlbb");
+    
+    if (!hasSeenWeekly && isMlbbGame) {
+      setShowWeeklyAlert(true);
+    }
+  }, [game, id]);
+
+  const handleCloseWeeklyAlert = () => {
+    sessionStorage.setItem(`seen_weekly_alert_${id}`, "true");
+    setShowWeeklyAlert(false);
+  };
 
   useEffect(() => {
     if (!sortedPackages.length) return;
@@ -97,7 +116,7 @@ function Packages() {
   // ឆែកបង្ហាញប្រអប់ Server / Zone ID សម្រាប់គ្រប់ខ្សែ MLBB
   const showZoneInput =
     currentGameCode.includes("mlbb") ||
-    currentGameCode === "mcgg" ||
+    currentGameCode === "magic_chest_gogo" ||
     currentGameCode === "la" ||
     currentGameCode === "lifeafter";
 
@@ -154,7 +173,7 @@ function Packages() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    // 🎯 ដំណោះស្រាយ៖ ឆែក Validation បង្ខំឱ្យវាយ ID និងចុច Check ID មុនពេលបង់លុយ
+    // 🎯 ប្រព័ន្ធការពារ (Validation) បង្ខំឱ្យវាយ ID និងចុច Check ID មុនពេលបង់លុយ
     if (!form.user_id.trim()) {
       setError("សូមបំពេញ User ID / Player ID របស់បងជាមុនសិន! (Please enter User ID first.)");
       return;
@@ -264,7 +283,7 @@ function Packages() {
                 {/* Game Header */}
                 <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur flex flex-col gap-4 sm:flex-row sm:items-center">
                   
-                  {/* 🎯 រៀបចំ Padding, break-words, ទំហំអក្សរ ឱ្យអក្សរ MLBB_EXCLUSIVE រត់ Fit ក្នុងប្រអប់ការ៉េ */}
+                  {/* 🎯 រៀបចំ CSS ឱ្យអក្សរ MLBB_EXCLUSIVE រត់ Fit ក្នុងប្រអប់ការ៉េ */}
                   <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/15 text-center shrink-0 p-2 overflow-hidden">
                     <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-cyan-100 break-words max-w-full block leading-tight">
                       {game.code || "game"}
@@ -456,6 +475,55 @@ function Packages() {
           </div>
         </div>
       )}
+
+      {/* 🎯 ផ្ទាំង ALERT POP-UP សេចក្តីជូនដំណឹងអំពី WEEKLY DIAMOND PASS (Show One Time per Session) */}
+     {showWeeklyAlert && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            
+            {/* Header ផ្ទាំងប្រកាស */}
+            <div className="text-center mb-4">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/10 border border-fuchsia-400/20 mb-2">
+                <span className="text-xl">👑</span>
+              </div>
+              <h3 className="text-lg font-black text-white tracking-wide">Weekly Diamond Pass Notice</h3>
+            </div>
+
+            {/* បញ្ជីលក្ខខណ្ឌច្បាប់ផ្អែកលើរូបភាព image_c22d7d.png */}
+            <div className="space-y-3.5 text-slate-200 text-xs sm:text-sm bg-slate-950/50 border border-white/5 p-4 rounded-2xl leading-relaxed mb-5">
+              <p className="font-medium">
+                1. សូមបញ្ជាក់ថា អាខោនរបស់អ្នក <span className="text-fuchsia-400 font-bold">Level 5 ឡើង</span> ទើបអាចទិញបាន។
+              </p>
+              <p className="font-medium">
+                2. សូមបញ្ជាក់ថា បើអាខោនរបស់អ្នកមាន Weekly Diamond Pass ហើយ អ្នកអាចទិញបានលុះត្រាតែ Weekly Diamond Pass របស់អ្នក<span className="text-cyan-400 font-bold">នៅសល់ក្រោម 70 ថ្ងៃ</span>។
+              </p>
+            </div>
+
+            {/* ផ្នែកបន្ថែមរំលឹកពី Diamond Amount */}
+            <div className="p-3 rounded-xl border border-cyan-500/10 bg-cyan-500/5 text-[11px] sm:text-xs text-slate-400 mb-5 leading-tight">
+              💡 <span className="text-slate-300 font-semibold">ព័ត៌មានកញ្ចប់៖</span> ទទួលបាន 80 Diamonds ភ្លាមៗ និង 20 Diamonds ប្រចាំថ្ងៃរយៈពេល ៧ ថ្ងៃ (សរុប ២២០ គ្រាប់)។
+            </div>
+
+            {/* ប៊ូតុងយល់ព្រមបិទផ្ទាំង */}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowWeeklyAlert(false)}
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                បិទ
+              </button>
+              <button
+                onClick={handleCloseWeeklyAlert}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-400 hover:to-pink-400 text-white text-xs font-bold shadow-lg shadow-fuchsia-500/20 transition active:scale-[0.98] cursor-pointer"
+              >
+                យល់ព្រម
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
