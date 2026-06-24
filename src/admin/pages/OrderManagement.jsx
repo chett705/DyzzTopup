@@ -26,7 +26,7 @@ function OrderManagement() {
         if (!isSilent) setLoading(true);
         const result = await fetchAdminDashboard();
         
-        // 🎯 ដំណោះស្រាយគន្លឹះ៖ ចាប់យក Array orders ឱ្យត្រូវតាម Laravel Response Structure
+        // 🎯 ចាប់យក Array orders ឱ្យត្រូវតាម Laravel Response Structure
         let items = [];
         if (result?.orders && Array.isArray(result.orders)) {
           items = result.orders;
@@ -38,13 +38,26 @@ function OrderManagement() {
           items = result;
         }
 
+        // 🎯 ដំណោះស្រាយគន្លឹះ៖ ធ្វើម៉ាស៊ីន Mapper ធានាចាប់យក Username គ្រប់ច្រក Key ដែលបោះមកពី Laravel
+        const mappedItems = items.map((order) => {
+          const finalUsername = order.player_username 
+            || order.username 
+            || order.player_name 
+            || order.player_id_name 
+            || "";
+          return {
+            ...order,
+            player_username: finalUsername // បង្ខំឱ្យចូល Key player_username ជានិច្ច
+          };
+        });
+
         if (!ignore) {
-          setOrders(items);
+          setOrders(mappedItems);
           
           // រៀបចំដំឡើងប្រព័ន្ធ Drafts Input សម្រាប់ Status
           setDrafts((currentDrafts) => {
             const nextDrafts = { ...currentDrafts };
-            items.forEach((order) => {
+            mappedItems.forEach((order) => {
               if (!nextDrafts[order.id]) {
                 nextDrafts[order.id] = {
                   status: order.status ?? "pending",
@@ -165,7 +178,7 @@ function OrderManagement() {
     }
   }
 
-  // 🖨️ មុខងារបោះពុម្ភវិក្កយបត្រ (បានបន្ថែម Username រួចរាល់)
+  // 🖨️ មុខងារបោះពុម្ភវិក្កយបត្រ
   function handleDownloadReceipt(order) {
     const printWindow = window.open("", "_blank");
     const htmlContent = `
@@ -271,13 +284,12 @@ function OrderManagement() {
                   </label>
                 </div>
 
-            
                 <div className="mt-4 grid gap-2 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-5 border-y border-white/5 py-3 my-3">
                   <div>Order No: <span className="font-mono text-cyan-200 text-xs">{order.order_no || order.id || "-"}</span></div>
                   <div>Player ID: <span className="font-semibold">{order.player_id || "-"}</span></div>
                   
-                  {/* 🎯 ថែមការបង្ហាញ Username ផ្ទាល់លើក្រឡាកាត Row នីមួយៗលើ Admin */}
-                  <div>Username: <span className="text-emerald-400 font-bold">{order.player_username || "N/A"}</span></div>
+                  {/* 🎯 បង្ហាញឈ្មោះអតិថិជនបានយ៉ាងត្រឹមត្រូវ ១០០% ទោះសេសសល់ទិន្នន័យទទេក៏លោត No Name មិនឱ្យចេញ N/A ដែរ */}
+                  <div>Username: <span className="text-emerald-400 font-bold">{order.player_username || "No Name"}</span></div>
                   
                   <div>Zone ID: <span className="font-semibold">{order.zone_id || "-"}</span></div>
                   <div>Amount: <span className="text-emerald-400 font-bold">${Number(order.amount ?? 0).toFixed(2)}</span></div>

@@ -20,7 +20,6 @@ function Packages() {
   const [paymentUrl, setPaymentUrl] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  // 🎯 Modal State សម្រាប់បង្ហាញ QR ក្នុងទំព័រតែមួយ
   const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
@@ -79,7 +78,7 @@ function Packages() {
   const checkoutUrl = paymentResult?.checkout_url || paymentUrl;
   const packageCount = game?.packages?.length || 0;
 
-  const usernameLabel = usernameResult?.name || usernameResult?.username || "-";
+  const usernameLabel = usernameResult?.player_name || usernameResult?.username || usernameResult?.name || usernameResult?.account_name || "-";
   const currentGameCode = (game?.code || "").toLowerCase();
 
   const priceLabel =
@@ -109,57 +108,38 @@ function Packages() {
       setUsernameError("");
       setUsernameResult(null);
 
-      let apiUrl = "";
-      switch (currentGameCode) {
-        case "mlbb":
-          apiUrl = `https://api.isan.eu.org/nickname/ml?id=${encodeURIComponent(form.user_id.trim())}&zone=${encodeURIComponent(form.server_id.trim())}`;
-          break;
-        case "mcgg":
-          apiUrl = `https://api.isan.eu.org/nickname/mcgg?id=${encodeURIComponent(form.user_id.trim())}&server=${encodeURIComponent(form.server_id.trim())}`;
-          break;
-        case "hok":
-        case "honor_of_kings":
-          apiUrl = `https://api.isan.eu.org/nickname/hok?id=${encodeURIComponent(form.user_id.trim())}`;
-          break;
-        case "aov":
-          apiUrl = `https://api.isan.eu.org/nickname/aov?id=${encodeURIComponent(form.user_id.trim())}`;
-          break;
-        case "cod":
-        case "codm":
-          apiUrl = `https://api.isan.eu.org/nickname/cod?id=${encodeURIComponent(form.user_id.trim())}`;
-          break;
-        case "ff":
-        case "freefire":
-          apiUrl = `https://api.isan.eu.org/nickname/ff?id=${encodeURIComponent(form.user_id.trim())}`;
-          break;
-        default:
-          apiUrl = "";
-      }
+      const response = await requestJson("/mlbb/check-id", {
+        method: "POST",
+        body: JSON.stringify({
+          game_code: currentGameCode,
+          player_id: form.user_id.trim(),
+          zone_id: form.server_id.trim(),
+        }),
+      });
 
-      if (apiUrl) {
-        const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error("Server connection failed.");
-        const data = await response.json();
-        const result = data?.data ?? data ?? {};
+      const resData = response?.result?.data || response?.result || response;
 
-        if (!result?.name && !result?.username)
-          throw new Error("Account not found.");
-
-        setUsernameResult(result);
+      if (resData) {
+        setUsernameResult(resData);
       } else {
-        setUsernameResult({ name: "🎯 ID Formatted (Ready to top up)" });
+        throw new Error("Character not found. Please check your ID.");
       }
     } catch (err) {
-      setUsernameError(err.message || "Unable to verify username.");
+      console.error("Verification Error Detailed:", err);
+      let detailedError = "Unable to verify username.";
+      if (err.response?.data) {
+        detailedError = typeof err.response.data === 'object' ? JSON.stringify(err.response.data) : String(err.response.data);
+      } else if (err.data) {
+        detailedError = typeof err.data === 'object' ? JSON.stringify(err.data) : String(err.data);
+      } else if (err.message) {
+        detailedError = err.message;
+      } else {
+        detailedError = JSON.stringify(err);
+      }
+      setUsernameError(detailedError);
     } finally {
       setCheckingUsername(false);
     }
-  }
-
-  function openKhqrCheckout(customUrl) {
-    const targetUrl = customUrl || checkoutUrl;
-    if (!targetUrl) return;
-    setShowQrModal(true);
   }
 
   async function handleSubmit(event) {
@@ -186,7 +166,7 @@ function Packages() {
         game_code: currentGameCode,
         package_id: Number(selectedPackage),
         player_id: form.user_id,
-        player_username: usernameResult?.name || usernameResult?.username || "",
+        player_username: usernameResult?.username || usernameResult?.name || usernameResult?.player_name || "",
         zone_id: form.server_id,
         payment_method: "khqr",
       };
@@ -222,7 +202,8 @@ function Packages() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white relative">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* 🎯 បន្ថែម pb-32 នៅទីនេះដើម្បីកុំឱ្យបុកបាតអេក្រង់ទូរស័ព្ទ */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pb-32">
         <Link
           to="/"
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
@@ -231,7 +212,7 @@ function Packages() {
         </Link>
 
         {loading ? (
-          <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-8 text-slate-300">
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-8 text-slate-300 animate-pulse">
             Loading game packages...
           </div>
         ) : !game ? (
@@ -240,116 +221,107 @@ function Packages() {
           </div>
         ) : (
           <div>
+            {/* Banner Section */}
             <div className="overflow-hidden mt-4 rounded-3xl border border-white/10 bg-white/5 shadow-lg shadow-black/20">
               <img
                 src="/banner.png"
                 alt={`${game.name} banner`}
-                className="h-48 w-full object-cover sm:h-64 lg:h-80"
+                className="h-40 w-full object-cover sm:h-56 lg:h-72"
                 loading="lazy"
               />
             </div>
-            <div className="mt-6 grid gap-6 lg:grid-cols-1">
-              <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur flex flex-col justify-between">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="flex h-28 w-28 items-center justify-center rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/15 text-center shrink-0">
-                    <span className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-100">
+
+            {/* 📊 Layout Grid៖ បំបែកជួរឆ្លាតវៃលើ Desktop (2:1 Grid layout) */}
+            <div className="mt-6 grid gap-6 grid-cols-1 lg:grid-cols-3 items-start">
+              
+              {/* 🛑 ផ្នែកខាងឆ្វេង (គណនីយ និង បញ្ជីកាតពេជ្រ) */}
+              <div className="lg:col-span-2 space-y-6">
+                
+                {/* Game Header */}
+                <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/15 text-center shrink-0">
+                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100">
                       {game.code || "game"}
                     </span>
                   </div>
                   <div>
-                    <h1 className="text-3xl font-black">{game.name}</h1>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <h1 className="text-2xl sm:text-3xl font-black">{game.name}</h1>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-400">
                       {packageCount} packages available
                     </p>
                   </div>
-                </div>
+                </section>
 
-                {/* 🧑‍💻 Form Player details */}
-                <div className="my-6">
-                  <form
-                    onSubmit={handleSubmit}
-                    className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur"
-                  >
-                    <h3 className="text-xl font-bold">Player details</h3>
-                    <p className="mt-1 text-sm text-slate-400">
-                      Fill the required info exactly as in your game account.
-                    </p>
+                {/* Player details form */}
+                <section className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+                  <h3 className="text-lg sm:text-xl font-bold">Player details</h3>
+                  <p className="mt-1 text-xs sm:text-sm text-slate-400">
+                    Fill the required info exactly as in your game account.
+                  </p>
 
-                    <div className="mt-5 grid gap-4">
-                      <div
-                        className={`grid gap-4 ${showZoneInput ? "sm:grid-cols-2" : "grid-cols-1"}`}
-                      >
+                  <div className="mt-5 grid gap-4">
+                    <div className={`grid gap-4 ${showZoneInput ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-400">User ID / Player ID</span>
+                        <input
+                          value={form.user_id}
+                          onChange={(e) => {
+                            setForm({ ...form, user_id: e.target.value });
+                            setUsernameResult(null);
+                            setUsernameError("");
+                          }}
+                          className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/60 transition"
+                          placeholder={currentGameCode === "mlbb" ? "702425515" : "Enter ID"}
+                          required
+                        />
+                      </label>
+
+                      {showZoneInput && (
                         <label className="grid gap-2">
-                          <span className="text-sm font-semibold text-slate-400">
-                            User ID / Player ID
-                          </span>
+                          <span className="text-sm font-semibold text-slate-400">Server / Zone ID</span>
                           <input
-                            value={form.user_id}
+                            value={form.server_id}
                             onChange={(e) => {
-                              setForm({ ...form, user_id: e.target.value });
+                              setForm({ ...form, server_id: e.target.value });
                               setUsernameResult(null);
                               setUsernameError("");
                             }}
-                            className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
-                            placeholder={
-                              currentGameCode === "mlbb"
-                                ? "702425515"
-                                : "Enter ID"
-                            }
-                            required
+                            className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/60 transition"
+                            placeholder="10301"
+                            required={showZoneInput}
                           />
                         </label>
+                      )}
+                    </div>
 
-                        {showZoneInput && (
-                          <label className="grid gap-2">
-                            <span className="text-sm font-semibold text-slate-400">
-                              Server / Zone ID
-                            </span>
-                            <input
-                              value={form.server_id}
-                              onChange={(e) => {
-                                setForm({ ...form, server_id: e.target.value });
-                                setUsernameResult(null);
-                                setUsernameError("");
-                              }}
-                              className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
-                              placeholder="10301"
-                              required={showZoneInput}
-                            />
-                          </label>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-2">
+                      <div className="min-h-6 text-sm font-semibold flex-1">
+                        {usernameResult && (
+                          <span className="text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl inline-block">
+                            Name : {usernameLabel}
+                          </span>
+                        )}
+                        {usernameError && (
+                          <span className="text-rose-400 block max-w-lg break-all bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-xl">
+                            ⚠️ {usernameError}
+                          </span>
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        {/* បង្ហាញឈ្មោះពេល Verify ជោគជ័យ ឬ បង្ហាញ Error Error ពេលរកមិនឃើញ */}
-                        <div className="min-h-6 text-sm font-semibold">
-                          {usernameResult && (
-                            <span className="text-emerald-300">
-                              Name : {usernameLabel}
-                            </span>
-                          )}
-                          {usernameError && (
-                            <span className="text-rose-400">
-                              ⚠️ {usernameError}
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={handleCheckUsername}
-                          disabled={checkingUsername || !form.user_id.trim()}
-                          className="inline-flex items-center justify-center rounded-full border border-fuchsia-400/30 bg-fuchsia-500/15 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/25 disabled:opacity-50 cursor-pointer"
-                        >
-                          {checkingUsername ? "Checking..." : "CHECK ID"}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCheckUsername}
+                        disabled={checkingUsername || !form.user_id.trim()}
+                        className="inline-flex items-center justify-center rounded-2xl border border-fuchsia-400/30 bg-fuchsia-500/15 px-5 py-3 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/25 disabled:opacity-50 cursor-pointer active:scale-95"
+                      >
+                        {checkingUsername ? "Checking..." : "CHECK ID"}
+                      </button>
                     </div>
-                  </form>
-                </div>
+                  </div>
+                </section>
 
-                {/* 💎 បញ្ជីកញ្ចប់តម្លៃ Diamonds */}
-                <div className="grid grid-cols-2 gap-4 items-stretch">
+                {/* Packages Selection Grid */}
+                <section className="grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
                   {(game.packages || []).map((pkg) => {
                     const isActive = String(pkg.id) === String(selectedPackage);
                     return (
@@ -357,70 +329,63 @@ function Packages() {
                         key={pkg.id}
                         type="button"
                         onClick={() => setSelectedPackage(String(pkg.id))}
-                        className={`flex min-h-[120px] flex-col justify-between rounded-3xl border p-4 text-left transition-all duration-300 cursor-pointer ${
+                        className={`flex min-h-[110px] flex-col justify-between rounded-3xl border p-4 text-left transition-all duration-300 cursor-pointer active:scale-95 ${
                           isActive
-                            ? "border-cyan-400/50 bg-cyan-400/10 shadow-lg shadow-cyan-500/10"
+                            ? "border-cyan-400/60 bg-cyan-400/10 shadow-lg shadow-cyan-500/10"
                             : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-white/5"
                         }`}
                       >
                         <div className="flex justify-between items-start gap-2 w-full">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm sm:text-base font-bold text-white tracking-wide truncate">
+                            <h3 className="text-xs sm:text-sm font-bold text-slate-100 tracking-wide truncate">
                               {pkg.name}
                             </h3>
-                            <p className="mt-1 text-[11px] sm:text-xs font-semibold text-slate-400">
+                            <p className="mt-1 text-[10px] sm:text-xs font-semibold text-slate-400">
                               {pkg.diamond_amount} diamonds
                             </p>
                           </div>
-                          <span className="shrink-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[11px] font-black text-emerald-300 shadow-sm">
+                          <span className="shrink-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] sm:text-[11px] font-black text-emerald-300 shadow-sm">
                             ${Number(pkg.price).toFixed(2)}
                           </span>
                         </div>
                       </button>
                     );
                   })}
-                </div>
-              </section>
+                </section>
+              </div>
 
-              {/* 📑 Sidebar Summary */}
-              <aside className="space-y-6">
-                <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/15 to-fuchsia-500/10 p-5">
+              {/* 🛑 ផ្នែកខាងស្តាំ (កាតសង្ខេបតម្លៃ និង ប៊ូតុងទូទាត់លុយ) */}
+              <aside className="space-y-6 lg:col-span-1">
+                <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/15 to-fuchsia-500/10 p-5 sticky top-6">
                   <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">
-                      Before payment
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold text-white">
+                    <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Before payment</p>
+                    <h2 className="mt-2 text-xl sm:text-2xl font-bold text-white truncate">
                       {activePackage?.name || "No package selected"}
                     </h2>
-                    <p className="mt-2 text-sm text-slate-300">
+                    <p className="mt-2 text-xs sm:text-sm text-slate-300">
                       Review the package details, then confirm the terms to continue.
                     </p>
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                     <p className="text-xs uppercase text-slate-400">Total</p>
-                    <p className="mt-1 text-2xl font-black text-slate-300">
-                      {priceLabel}
-                    </p>
+                    <p className="mt-1 text-xl sm:text-2xl font-black text-slate-300">{priceLabel}</p>
                   </div>
 
-                  <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 transition hover:bg-white/10">
+                  <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 transition hover:bg-white/10 select-none">
                     <input
                       type="checkbox"
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="h-5 w-5 rounded border-white/20 bg-slate-950 text-cyan-500 focus:ring-cyan-400"
+                      className="h-5 w-5 mt-0.5 rounded border-white/20 bg-slate-950 text-cyan-500 focus:ring-cyan-400 shrink-0"
                     />
-                    <span className="text-sm font-semibold text-white">
-                      I agree to{" "}
-                      <span className="text-slate-300 uppercase tracking-[0.2em]">
-                        Terms and Conditions
-                      </span>
+                    <span className="text-xs sm:text-sm font-semibold text-slate-200 leading-tight">
+                      I agree to <span className="text-slate-300 uppercase tracking-[0.1em] font-bold">Terms and Conditions</span>
                     </span>
                   </label>
 
                   {error && (
-                    <div className="mt-3 text-sm text-rose-400 font-semibold bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                    <div className="mt-3 text-xs sm:text-sm text-rose-400 font-semibold bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl break-words">
                       {error}
                     </div>
                   )}
@@ -429,25 +394,24 @@ function Packages() {
                     <button
                       type="submit"
                       disabled={submitting || !acceptedTerms}
-                      className="mt-4 flex w-full items-center justify-between rounded-2xl bg-slate-400 px-4 py-4 font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-4 flex w-full items-center justify-between rounded-2xl bg-white hover:bg-slate-200 px-4 py-4 font-bold text-slate-950 shadow-lg shadow-cyan-500/5 transition disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.98]"
                     >
-                      <span>{submitting ? "Payment..." : "Payment"}</span>
-                      <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-[0.25em]">
-                        KHQR
-                      </span>
+                      <span className="text-sm sm:text-base">{submitting ? "Processing..." : "PAYMENT NOW"}</span>
+                      <span className="rounded-full bg-slate-950/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.25em]">KHQR</span>
                     </button>
                   </form>
                 </div>
               </aside>
+
             </div>
           </div>
         )}
       </div>
 
-      {/* 🎯 ផ្ទាំង MODAL OVERLAY បង្ហាញ KHQR ក្នុងទំព័រតែមួយ */}
+      {/* QR Code Modal Box */}
       {showQrModal && checkoutUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-5">
-          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 sm:p-6">
+          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setShowQrModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors text-xl font-bold p-1 cursor-pointer"
@@ -456,17 +420,12 @@ function Packages() {
             </button>
             <div className="text-center mb-4">
               <h3 className="text-xl font-black text-white">Scan to Pay</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Please scan the KHQR code below to complete payment.
-              </p>
+              <p className="text-xs text-slate-400 mt-1">Please scan the KHQR code below to complete payment.</p>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white h-[530px] w-full shadow-inner">
-              <iframe
-                src={checkoutUrl}
-                title="KHQR Checkout Window"
-                className="w-full h-full border-none"
-              />
+            {/* Responsive Iframe Container */}
+            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white h-[480px] sm:h-[520px] w-full shadow-inner relative">
+              <iframe src={checkoutUrl} title="KHQR Checkout Window" className="w-full h-full border-none" />
             </div>
           </div>
         </div>
