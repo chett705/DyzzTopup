@@ -1,6 +1,6 @@
+// 🎯 ដំណោះស្រាយ៖ ទាញចេញពី .env ផ្ទាល់តែម្តង និងលុប Fallback URL ដែលចងងាប់ចោលដើម្បីលាក់ឱ្យជិត
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") ||
-  "https://dystoreback.onrender.com/api/topup";
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "";
 
 function buildUrl(path) {
   if (!path) return API_BASE_URL;
@@ -14,6 +14,12 @@ function normalizeError(message, fallback) {
 }
 
 export async function requestJson(path, options = {}) {
+  // 🚨 ការពារករណីភ្លេចកំណត់តម្លៃក្នុង .env
+  if (!API_BASE_URL && !/^https?:\/\//i.test(path)) {
+    console.error("API Base URL is not defined. Please check your .env file.");
+    throw new Error("Configuration error. Please try again later.");
+  }
+
   const response = await fetch(buildUrl(path), {
     headers: {
       Accept: "application/json",
