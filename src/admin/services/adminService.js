@@ -50,6 +50,13 @@ export async function createAdminPackage(payload) {
   return unwrap(response);
 }
 
+export async function deleteAdminPackage(packageId) {
+  const response = await adminApi.delete(
+    `/admin/packages/${encodeURIComponent(packageId)}`
+  );
+  return unwrap(response);
+}
+
 export async function updateAdminOrder(orderId, payload) {
   const response = await adminApi.patch(`/admin/orders/${encodeURIComponent(orderId)}`, payload);
   return unwrap(response);

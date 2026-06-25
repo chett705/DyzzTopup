@@ -1,192 +1,96 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { requestJson } from "./api"; // 🎯 ទាញយកមុខងារ Fetch ដែលលាក់ API Base URL រួចរាល់
+import { requestJson } from "./api";
 
 function Game() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
-  // 🎯 State សម្រាប់គ្រប់គ្រងការបង្ហាញ Alert Pop-up
-  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     let ignore = false;
-
     async function loadGames() {
       try {
         setLoading(true);
         setError("");
-        const data = await requestJson("/games");
-        if (!ignore) {
-          setGames(Array.isArray(data?.data) ? data.data : []);
-        }
+        const response = await requestJson("/games");
+        const gameItems = Array.isArray(response?.data) ? response.data : [];
+        if (!ignore) setGames(gameItems);
       } catch (err) {
-        if (!ignore) setError(err.message || "Unable to load games.");
+        if (!ignore) setError(err.message || "Unable to load games list.");
       } finally {
         if (!ignore) setLoading(false);
       }
     }
-
     loadGames();
-
-    // 🎯 ឆែកមើលថាតើម៉ូយធ្លាប់បានឃើញ Alert នេះហើយឬនៅ (First Time Visit Only)
-    const hasSeenAlert = localStorage.getItem("has_seen_mlbb_alert");
-    if (!hasSeenAlert) {
-      setShowAlert(true);
-    }
-
-    return () => {
-      ignore = true;
-    };
+    return () => { ignore = true; };
   }, []);
 
-  // 🎯 មុខងារបិទ Alert និងចំណាំទុកក្នុង Browser ឈប់ឱ្យលោតទៀត
-  const handleCloseAlert = () => {
-    localStorage.setItem("has_seen_mlbb_alert", "true");
-    setShowAlert(false);
-  };
-
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#1f3c88_0%,_#0f172a_40%,_#050816_100%)] text-white relative">
-      
-      {/* Fixed Header Section */}
-      <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
-        <header className="mx-auto flex max-w-7xl flex-col gap-4 rounded-3xl border border-white/10 bg-slate-950/80 px-5 py-4 shadow-2xl shadow-black/20 backdrop-blur md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300 font-bold">
-              Dyzz Diamond Top Up
-            </p>
-          </div>
-        </header>
-      </div>
-
-      {/* Main Content Container */}
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 pb-32 pt-24 sm:px-6 lg:px-8">
-        <main className="flex-1">
-          
-          {loading ? (
-            <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 mt-4">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-44 sm:h-60 lg:h-72 animate-pulse rounded-3xl border border-white/10 bg-white/5"
-                />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="rounded-3xl border border-red-400/30 bg-red-500/10 p-6 text-red-100 mt-4">
-              <p className="font-semibold">Could not load games</p>
-              <p className="mt-1 text-sm">{error}</p>
-            </div>
-          ) : games.length === 0 ? (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center text-slate-300 mt-4">
-              No games found yet.
-            </div>
-          ) : (
-            <div className="space-y-6">
-              
-              {/* Responsive Banner */}
-              <div className="overflow-hidden mt-4 rounded-3xl border border-white/10 bg-white/5 shadow-lg shadow-black/20">
-                <img
-                  src="/bannerlistgame.png"
-                  alt="Games banner"
-                  className="h-36 w-full object-cover sm:h-56 md:h-64 lg:h-80"
-                  loading="lazy"
-                />
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl font-black text-center my-6 tracking-wide">
-                Fast Top Up
-              </h1>
-
-              {/* Game Grid Cards */}
-              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 items-stretch">
-                {games.map((game) => (
-                  <Link
-                    key={game.id}
-                    to={`/games/${game.id}`}
-                    state={{ game }}
-                    className="group"
-                  >
-                    <article className="h-full overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-xl shadow-black/10 transition-all duration-300 group-hover:-translate-y-1 group-hover:border-cyan-400/40 group-hover:shadow-cyan-500/10 active:scale-95">
-                      <div className="flex flex-col justify-between bg-gradient-to-br from-cyan-500/20 via-slate-950 to-fuchsia-500/15 p-4 min-h-[160px] sm:min-h-[200px] h-full">
-                        
-                        <div className="my-auto py-2">
-                          <h3 className="text-base sm:text-lg lg:text-xl font-black text-white tracking-wide line-clamp-2 text-center group-hover:text-cyan-200 transition-colors">
-                            {game.name}
-                          </h3>
-                        </div>
-
-                        <div className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs sm:text-sm font-bold text-slate-300 transition group-hover:border-cyan-400/40 group-hover:bg-cyan-400/10 group-hover:text-white">
-                          <span className="uppercase tracking-[0.2em]">
-                            Top up
-                          </span>
-                        </div>
-
-                      </div>
-                    </article>
-                  </Link>
-                ))}
-              </div>
-
-            </div>
-          )}
-        </main>
-      </div>
-
-      {/* 🎯 ផ្ទាំង ALERT POP-UP សេចក្តីជូនដំណឹងអំពីល្បឿនបញ្ចូលពេជ្រ */}
-      {showAlert && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
-            
-            {/* Icon កណ្ដឹងប្រកាស */}
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-400/20 mb-4">
-              <span className="text-2xl">📢</span>
-            </div>
-
-            <h3 className="text-xl font-black text-white tracking-wide">សេចក្តីជូនដំណឹង / Notice</h3>
-            <p className="text-xs text-slate-400 mt-1 mb-5">ព័ត៌មានលម្អិតអំពីល្បឿនសេវាកម្ម Mobile Legends</p>
-
-            {/* បញ្ជីពន្យល់ពីល្បឿន លឿន ឬ យឺត */}
-            <div className="space-y-3 text-left mb-6">
-              
-              {/* ខ្សែ Exclusive */}
-              <div className="p-3.5 rounded-2xl border border-cyan-500/20 bg-cyan-500/5">
-                <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
-                  <span></span>
-                  <h4>Mobile Legends Exclusive</h4>
-                </div>
-                <p className="text-xs text-slate-300 mt-1 pl-5 leading-relaxed">
-                  ល្បឿនលឿនបំផុត **(Instant ចូលភ្លាមៗក្នុង ១ វិនាទី) ក្រោយពេលបង់ប្រាក់រួចរាល់។
-                </p>
-              </div>
-
-              {/* ខ្សែ Regular */}
-              <div className="p-3.5 rounded-2xl border border-amber-500/20 bg-amber-500/5">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                  <span></span>
-                  <h4>Mobile Legends (Regular)</h4>
-                </div>
-                <p className="text-xs text-slate-300 mt-1 pl-5 leading-relaxed">
-                  ល្បឿនធម្មតា (រង់ចាំចន្លោះពី ១ ទៅ ៥ នាទី) ប៉ុន្តែតម្លៃធូរថ្លៃជាងមុន។
-                </p>
-              </div>
-
-            </div>
-
-            {/* ប៊ូតុងយល់ព្រមបិទផ្ទាំង */}
-            <button
-              onClick={handleCloseAlert}
-              className="w-full py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm tracking-wider transition active:scale-[0.98] cursor-pointer"
-            >
-              ខ្ញុំបានយល់ / I UNDERSTAND
-            </button>
-
-          </div>
+    <div className="min-h-screen bg-[#060913] text-white p-4 sm:p-6 lg:p-8 font-sans">
+      <div className="mx-auto max-w-7xl">
+        
+        {/* 🎯 Top Mini Bar (ដូចក្នុងរូបថតទី ១) */}
+        <div className="w-full mb-6 max-w-7xl mx-auto rounded-full border border-slate-900 bg-[#0b1120]/60 px-6 py-3 backdrop-blur-md">
+          <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-cyan-400">
+            DYZZ DIAMOND TOP UP
+          </span>
         </div>
-      )}
 
+        {/* 🎯 Banner Slot */}
+        <div className="overflow-hidden rounded-3xl border border-slate-900 bg-[#0d1527] shadow-2xl shadow-black/40">
+          <img
+            src="/banner.png"
+            alt="Topup Game Banner"
+            className="w-full h-auto object-cover max-h-[320px]"
+            loading="lazy"
+          />
+        </div>
+
+        {/* 🎯 Heading Title "Fast Top Up" */}
+        <div className="text-center my-10">
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-wide">
+            Fast Top Up
+          </h2>
+        </div>
+
+        {/* Loading / Error States */}
+        {loading ? (
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 max-w-5xl mx-auto">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-56 rounded-3xl bg-[#0b1120]/60 border border-white/5 animate-pulse" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4 text-center text-rose-400 text-sm font-semibold max-w-md mx-auto">
+            ⚠️ {error}
+          </div>
+        ) : (
+          /* 🎯 Games Grid (ទម្រង់ Card ធំៗដូចរូប image_13f1a7.jpg) */
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 max-w-5xl mx-auto items-stretch">
+            {games.map((g) => (
+              <Link
+                key={g.id}
+                to={`/games/${g.id}`}
+                className="group relative flex min-h-[220px] flex-col justify-between rounded-3xl border border-cyan-500/10 bg-gradient-to-b from-[#0e172c] to-[#0a0f1d] p-6 text-center transition-all duration-300 hover:-translate-y-1.5 hover:border-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/5 active:scale-95"
+              >
+                {/* Center Content: Game Name */}
+                <div className="flex-1 flex items-center justify-center py-4">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-100 tracking-wide group-hover:text-cyan-400 transition-colors">
+                    {g.name}
+                  </h3>
+                </div>
+
+                {/* Bottom Pill Capsule Button */}
+                <div className="w-full rounded-2xl border border-slate-800 bg-[#121c35]/40 py-2.5 text-xs font-black tracking-widest text-slate-400 transition-all duration-300 group-hover:border-cyan-500/30 group-hover:bg-cyan-500/10 group-hover:text-cyan-400">
+                  TOP UP
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

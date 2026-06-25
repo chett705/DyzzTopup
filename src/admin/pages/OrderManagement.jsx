@@ -26,7 +26,6 @@ function OrderManagement() {
         if (!isSilent) setLoading(true);
         const result = await fetchAdminDashboard();
         
-        // 🎯 ចាប់យក Array orders ឱ្យត្រូវតាម Laravel Response Structure
         let items = [];
         if (result?.orders && Array.isArray(result.orders)) {
           items = result.orders;
@@ -38,7 +37,7 @@ function OrderManagement() {
           items = result;
         }
 
-        // 🎯 ដំណោះស្រាយគន្លឹះ៖ ធ្វើម៉ាស៊ីន Mapper ធានាចាប់យក Username គ្រប់ច្រក Key ដែលបោះមកពី Laravel
+        // 🎯 ធ្វើម៉ាស៊ីន Mapper ធានាចាប់យក Username គ្រប់ច្រក Key
         const mappedItems = items.map((order) => {
           const finalUsername = order.player_username 
             || order.username 
@@ -47,14 +46,13 @@ function OrderManagement() {
             || "";
           return {
             ...order,
-            player_username: finalUsername // បង្ខំឱ្យចូល Key player_username ជានិច្ច
+            player_username: finalUsername 
           };
         });
 
         if (!ignore) {
           setOrders(mappedItems);
           
-          // រៀបចំដំឡើងប្រព័ន្ធ Drafts Input សម្រាប់ Status
           setDrafts((currentDrafts) => {
             const nextDrafts = { ...currentDrafts };
             mappedItems.forEach((order) => {
@@ -74,10 +72,8 @@ function OrderManagement() {
       }
     }
 
-    // ដំណើរការលើកដំបូង
     load(false);
 
-    // ⏱️ រត់ដេញទាញទិន្នន័យថ្មីពី Server ស្ងាត់ៗរៀងរាល់ ៥ វិនាទីម្ដង
     const intervalId = setInterval(() => {
       load(true);
     }, 5000);
@@ -88,7 +84,7 @@ function OrderManagement() {
     };
   }, []);
 
-  // ❌ មុខងារលុប Order ចេញពី Database
+  // ❌ មុខងារលុប Order 
   async function handleDeleteOrder(id) {
     const confirmResult = await Swal.fire({
       title: "Are you sure?",
@@ -153,7 +149,7 @@ function OrderManagement() {
     }
   }
 
-  // ⚡ មុខងារចុចបង្ខំឱ្យជោគជ័យ (Bypass Success)
+  // ⚡ មុខងារចុចបង្ខំឱ្យជោគជ័យ និងបាញ់ពេជ្រទៅ FlashTopUp (Bypass Success)
   async function handleManualVerify(id) {
     try {
       setSavingId(id);
@@ -163,16 +159,25 @@ function OrderManagement() {
       const updated = result?.order || result?.data?.order || result;
       const finalStatus = updated?.status || "success";
 
-      if (updated) {
-        setOrders((current) =>
-          current.map((item) => String(item.id) === String(id) ? { ...item, ...updated, status: finalStatus } : item)
-        );
-        setDrafts((prev) => ({ ...prev, [id]: { status: finalStatus } }));
+      setOrders((current) =>
+        current.map((item) => String(item.id) === String(id) ? { ...item, ...updated, status: finalStatus } : item)
+      );
+      setDrafts((prev) => ({ ...prev, [id]: { status: finalStatus } }));
 
-        Swal.fire({ icon: "success", title: "Bypass Success!", text: "Diamonds dispatched.", confirmButtonColor: "#06b6d4" });
-      }
+      Swal.fire({ 
+        icon: "success", 
+        title: "Bypass Dispatched!", 
+        text: "Order approved and pushed to FlashTopUp successfully.", 
+        confirmButtonColor: "#06b6d4" 
+      });
+
     } catch (err) {
-      Swal.fire({ icon: "error", title: "Bypass Failed", text: err.message, confirmButtonColor: "#ef4444" });
+      Swal.fire({ 
+        icon: "error", 
+        title: "Bypass Failed", 
+        text: err.response?.data?.message || err.message || "FlashTopUp API refused this request.", 
+        confirmButtonColor: "#ef4444" 
+      });
     } finally {
       setSavingId(null);
     }
@@ -202,9 +207,7 @@ function OrderManagement() {
             <div class="divider"></div>
             <div class="item-row"><span>Order No:</span> <strong>${order.order_no || order.id || "-"}</strong></div>
             <div class="item-row"><span>Player ID:</span> <span>${order.player_id || "-"}</span></div>
-            
-            ${order.player_username ? `<div class="item-row"><span>Username:</span> <strong style="color: #10b981;">${order.player_username}</strong></div>` : ""}
-            
+            <div class="item-row"><span>Username:</span> <strong style="color: #10b981;">${order.player_username || "No Name"}</strong></div>
             ${order.zone_id ? `<div class="item-row"><span>Zone ID:</span> <span>${order.zone_id}</span></div>` : ""}
             <div class="item-row"><span>Package:</span> <span>${order.package?.name || order.package_name || "-"}</span></div>
             <div class="item-row"><span>Status:</span> <span>${order.status || "Pending"}</span></div>
@@ -236,26 +239,15 @@ function OrderManagement() {
       {loading ? (
         <div className="space-y-4" aria-busy="true" aria-live="polite">
           {Array.from({ length: 4 }).map((_, index) => (
-            <article
-              key={index}
-              className="animate-pulse rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md"
-            >
+            <article key={index} className="animate-pulse rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="h-4 w-40 rounded-full bg-white/10" />
                 <div className="h-8 w-24 rounded-full bg-white/10" />
               </div>
-
               <div className="mt-4 grid gap-2 border-y border-white/5 py-3 sm:grid-cols-2 lg:grid-cols-5">
                 {Array.from({ length: 5 }).map((__, rowIndex) => (
                   <div key={rowIndex} className="h-4 rounded-full bg-slate-950/40" />
                 ))}
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <div className="h-9 w-28 rounded-full bg-white/10" />
-                <div className="h-9 w-24 rounded-full bg-white/10" />
-                <div className="h-9 w-28 rounded-full bg-white/10" />
-                <div className="h-9 w-24 rounded-full bg-white/10" />
               </div>
             </article>
           ))}
@@ -268,7 +260,7 @@ function OrderManagement() {
         <div className="grid gap-4">
           {displayedOrders.map((order) => {
             const draft = drafts[order.id] || {};
-            const isPending = order.status === "pending";
+            const isPending = order.status === "pending" || order.status === "manual_hold";
 
             return (
               <article key={order.id} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md">
@@ -287,17 +279,14 @@ function OrderManagement() {
                 <div className="mt-4 grid gap-2 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-5 border-y border-white/5 py-3 my-3">
                   <div>Order No: <span className="font-mono text-cyan-200 text-xs">{order.order_no || order.id || "-"}</span></div>
                   <div>Player ID: <span className="font-semibold">{order.player_id || "-"}</span></div>
-                  
-                  {/* 🎯 បង្ហាញឈ្មោះអតិថិជនបានយ៉ាងត្រឹមត្រូវ ១០០% ទោះសេសសល់ទិន្នន័យទទេក៏លោត No Name មិនឱ្យចេញ N/A ដែរ */}
                   <div>Username: <span className="text-emerald-400 font-bold">{order.player_username || "No Name"}</span></div>
-                  
                   <div>Zone ID: <span className="font-semibold">{order.zone_id || "-"}</span></div>
                   <div>Amount: <span className="text-emerald-400 font-bold">${Number(order.amount ?? 0).toFixed(2)}</span></div>
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                   <div className="text-sm text-slate-400 flex items-center gap-3">
-                    <span>Package: {order.package?.name || order.package_name || "-"}</span>
+                    <span>Package: <strong className="text-white">{order.package?.name || order.package_name || "-"}</strong></span>
                     <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border transition-all duration-300 ${
                       order.status === "success"
                         ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
@@ -335,7 +324,7 @@ function OrderManagement() {
                       disabled={savingId === order.id}
                       className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60 hover:bg-slate-200 transition cursor-pointer"
                     >
-                      {savingId === order.id && !isPending ? "Saving..." : "Save Order"}
+                      Save Order
                     </button>
                     
                     <button
@@ -344,7 +333,7 @@ function OrderManagement() {
                       disabled={savingId === order.id}
                       className="rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500 hover:text-white transition disabled:opacity-50 cursor-pointer"
                     >
-                      {savingId === order.id ? "Deleting..." : "Delete"}
+                      Delete
                     </button>
                   </div>
                 </div>
