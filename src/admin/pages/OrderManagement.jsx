@@ -299,7 +299,7 @@ function OrderManagement() {
                   </div>
 
                   <div className="flex gap-2">
-                    {isPending && (
+                    {/* {isPending && (
                       <button
                         type="button"
                         onClick={() => handleManualVerify(order.id)}
@@ -308,7 +308,7 @@ function OrderManagement() {
                       >
                         {savingId === order.id ? "Bypassing..." : "Bypass Success"}
                       </button>
-                    )}
+                    )} */}
 
                     <button
                       type="button"
