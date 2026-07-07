@@ -10,6 +10,7 @@ import Dashboard from "./admin/pages/Dashboard";
 import GameManagement from "./admin/pages/GameManagement";
 import PackageManagement from "./admin/pages/PackageManagement";
 import OrderManagement from "./admin/pages/OrderManagement";
+import { Analytics } from "@vercel/analytics/react";
 
 function RequireAdminAuth({ children }) {
   const { isAuthenticated } = useAdminAuth();
@@ -80,7 +81,9 @@ function App() {
           </Route>
         </Routes>
       </AdminAuthProvider>
+      <Analytics />
     </BrowserRouter>
+    
   );
 }
 
