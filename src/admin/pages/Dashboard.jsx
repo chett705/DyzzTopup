@@ -46,34 +46,11 @@ function Dashboard() {
           <h1 className="mt-1 text-3xl font-black tracking-tight text-white">Dashboard</h1>
         </div>
         
-        {/* 💰 Reseller Wallet Quick Indicator */}
-        <div className={`px-5 py-2.5 rounded-2xl border backdrop-blur-md flex items-center gap-3 transition-all ${
-          isLowBalance 
-            ? "bg-rose-500/10 border-rose-500/30 text-rose-400 animate-pulse" 
-            : "bg-white/5 border-white/5 text-slate-300"
-        }`}>
-          <span className="text-lg">💳</span>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Reseller Wallet</p>
-            <p className="text-sm font-black">${walletBalance.toFixed(2)}</p>
-          </div>
-        </div>
+       
       </div>
 
-      {/* 🔔 Low Balance Alert Panel (React Native Checking) */}
-      {isLowBalance && (
-        <div className="mb-6 rounded-3xl border border-rose-500/20 bg-gradient-to-r from-rose-500/10 to-transparent p-5 flex items-start gap-4 shadow-lg shadow-rose-950/20">
-          <div className="bg-rose-500/20 w-10 h-10 rounded-2xl flex items-center justify-center text-rose-400 border border-rose-500/30 text-lg flex-shrink-0">
-            ⚠️
-          </div>
-          <div>
-            <h3 className="text-sm font-black text-rose-400 tracking-wide">Reseller Wallet Balance Low!</h3>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              ទឹកប្រាក់ទុនបច្ចុប្បន្នគឺសល់ត្រឹមតែ <span className="text-rose-400 font-bold">${walletBalance.toFixed(2)}</span> ប៉ុណ្ណោះ (ទាបជាង $10.00)។ សូមប្រញាប់ទាក់ទងទៅកាន់ Flash Topup Support ដើម្បីបញ្ចូលលុយបន្ថែម ការពារកុំឱ្យគាំង Order របស់ម៉ូយៗ!
-            </p>
-          </div>
-        </div>
-      )}
+     
+      
 
       {loading ? (
         <div className="space-y-6">
