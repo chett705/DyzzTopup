@@ -11,18 +11,35 @@ function Orders() {
   const [error, setError] = useState("");
   const skipNextAutoFetchRef = useRef(false);
 
-  useEffect(() => {
-    if (params.orderNo) {
-      setOrderNo(params.orderNo);
-      if (skipNextAutoFetchRef.current) {
-        skipNextAutoFetchRef.current = false;
+useEffect(() => {
+  let intervalId = null;
+
+  if (params.orderNo) {
+    setOrderNo(params.orderNo);
+    if (skipNextAutoFetchRef.current) {
+      skipNextAutoFetchRef.current = false;
+      return;
+    }
+
+    // 1. Fetch លើកដំបូង
+    void fetchOrder(params.orderNo);
+
+    // 2. Poll រៀងរាល់ ៦ វិនាទីម្តង ប្រសិនបើ Order នៅ Pending (កាត់បន្ថយ Load)
+    intervalId = setInterval(() => {
+      // ពិនិត្យមើលបើ Order បង់រួចរាល់ (PAID/COMPLETED/FAILED) មិនបាច់ Check ទៀតទេ
+      if (order && (order.status === 'PAID' || order.status === 'COMPLETED' || order.status === 'FAILED')) {
+        clearInterval(intervalId);
         return;
       }
-      void fetchOrder(params.orderNo);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.orderNo]);
+      fetchOrder(params.orderNo);
+    }, 6000); // ៦ វិនាទីម្តង
+  }
 
+  // 💡 ស្កាត់ Infinite Loop: សម្អាត Interval ពេលចាកចេញពីទំព័រ ឬដូរ orderNo
+  return () => {
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [params.orderNo, order?.status]);
   async function fetchOrder(value) {
     const nextOrderNo = value.trim();
     if (!nextOrderNo) return;

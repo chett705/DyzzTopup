@@ -56,7 +56,8 @@ function Packages() {
 
   const activePackage = useMemo(() => sortedPackages.find((pkg) => String(pkg.id) === String(selectedPackage)), [sortedPackages, selectedPackage]);
   const currentGameCode = (game?.code || "").toLowerCase();
-  const showZoneInput = currentGameCode.includes("mlbb") || currentGameCode === "magic_chest_gogo" || currentGameCode === "la";
+  const showZoneInput = currentGameCode.includes("mlbb") || currentGameCode === "magic_chest_gogo" || currentGameCode === "mlbb_exclusive";
+
 
   async function handleCheckUsername() {
     try {
@@ -72,7 +73,7 @@ function Packages() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!usernameResult || !acceptedTerms) return setError("Please complete required info and accept terms.");
+    // if (!usernameResult || acceptedTerms) return setError("Please complete required info and accept terms.");
     try {
       setSubmitting(true); setError("");
       const orderResponse = await requestJson("/orders", {
