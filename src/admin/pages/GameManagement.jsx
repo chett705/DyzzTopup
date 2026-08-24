@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createAdminGame, fetchAdminDashboard, adminApi } from "../services/adminService"; 
 
-// 🚀 មុខងារជំនួយសម្រាប់បាញ់ទៅ Update Game តាមវិធី PATCH ទៅកាន់ Laravel
 async function localUpdateAdminGame(gameId, payload) {
   const response = await adminApi.patch(`/admin/games/${encodeURIComponent(gameId)}`, payload);
   return response?.data;
@@ -10,18 +9,17 @@ async function localUpdateAdminGame(gameId, payload) {
 function GameManagement() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState(null); // 🎯 ចាប់ ID ហ្គេមដែលកំពុងចុច Save ឬ Create
-  const [creating, setCreating] = useState(false); // 🎯 បើក/បិទ Form បង្កើតហ្គេមថ្មី
+  const [savingId, setSavingId] = useState(null); 
+  const [creating, setCreating] = useState(false); 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [drafts, setDrafts] = useState({}); // 🎯 រក្សាទុកទិន្នន័យកែប្រែបណ្ដោះអាសន្ន (Drafts)
-  
-  // 🔍 សម្រាប់មុខងារ Search
+  const [drafts, setDrafts] = useState({}); 
   const [searchQuery, setSearchQuery] = useState("");
 
   const [createForm, setCreateForm] = useState({
     name: "",
     code: "",
+    api_game_id: "", // 🎯 បន្ថែម api_game_id
     is_active: true,
   });
 
@@ -40,6 +38,7 @@ function GameManagement() {
           nextDrafts[game.id] = {
             name: game.name || "",
             code: game.code || "",
+            api_game_id: game.api_game_id ?? "", // 🎯 Draft state សម្រាប់ api_game_id
             is_active: game.is_active !== undefined ? Boolean(game.is_active) : true,
           };
         });
@@ -64,7 +63,7 @@ function GameManagement() {
     }));
   }
 
-  // ➕ មុខងារបង្កើតហ្គេមថ្មី (Create Game)
+  // ➕ Create Game
   async function handleCreateGame(event) {
     event.preventDefault();
     try {
@@ -75,10 +74,11 @@ function GameManagement() {
       const result = await createAdminGame({
         name: createForm.name.trim(),
         code: createForm.code.trim(),
+        api_game_id: createForm.api_game_id ? Number(createForm.api_game_id) : null, // 🎯 ផ្ញើទៅ Backend
         is_active: createForm.is_active,
       });
 
-      const createdGame = result?.game || result?.data?.game || result;
+      const createdGame = result?.data || result?.game || result;
       if (createdGame) {
         setGames((current) => [createdGame, ...current]);
         
@@ -87,13 +87,14 @@ function GameManagement() {
           [createdGame.id]: {
             name: createdGame.name || "",
             code: createdGame.code || "",
+            api_game_id: createdGame.api_game_id ?? "",
             is_active: createdGame.is_active !== undefined ? Boolean(createdGame.is_active) : true,
           },
         }));
       }
 
-      setCreateForm({ name: "", code: "", is_active: true });
-      setMessage("Game created successfully.");
+      setCreateForm({ name: "", code: "", api_game_id: "", is_active: true });
+      setMessage(result?.message || "Game created successfully.");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Unable to create game.");
     } finally {
@@ -101,7 +102,7 @@ function GameManagement() {
     }
   }
 
-  // 💾 មុខងាររក្សាទុកទិន្នន័យកែប្រែ (Save Game)
+  // 💾 Save Game
   async function saveGame(id) {
     const draft = drafts[id];
     try {
@@ -109,17 +110,32 @@ function GameManagement() {
       setError("");
       setMessage("");
 
-      const result = await localUpdateAdminGame(id, draft);
-      const updated = (result?.game || result?.data) ?? result;
+      const payload = {
+        ...draft,
+        api_game_id: draft.api_game_id !== "" ? Number(draft.api_game_id) : null,
+      };
 
-      if (updated) {
+      const responseData = await localUpdateAdminGame(id, payload);
+      const updatedGame = responseData?.data || responseData?.game || responseData;
+
+      if (updatedGame) {
         setGames((current) =>
           current.map((item) =>
-            String(item.id) === String(id) ? { ...item, ...updated } : item
+            String(item.id) === String(id) ? { ...item, ...updatedGame } : item
           )
         );
+
+        setDrafts((current) => ({
+          ...current,
+          [id]: {
+            name: updatedGame.name ?? draft.name,
+            code: updatedGame.code ?? draft.code,
+            api_game_id: updatedGame.api_game_id ?? draft.api_game_id,
+            is_active: updatedGame.is_active !== undefined ? Boolean(updatedGame.is_active) : draft.is_active,
+          },
+        }));
       }
-      setMessage("Game updated successfully.");
+      setMessage(responseData?.message || "Game updated successfully.");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Unable to update game.");
     } finally {
@@ -127,17 +143,15 @@ function GameManagement() {
     }
   }
 
-  // 🗑️ មុខងារលុបហ្គេមដាច់ពី Database (Delete Game Fix)
- async function deleteGame(id) {
+  // 🗑️ Delete Game
+  async function deleteGame(id) {
     if (!window.confirm("Are you sure you want to delete this game?")) return;
     try {
       setError("");
       setMessage("");
 
-      // 🚀 បាញ់ទៅកាន់ /api/admin/games/{game} ចំទម្រង់ apiResource របស់ Laravel
       await adminApi.delete(`/admin/games/${id}`); 
 
-      // 💻 បើលុបជោគជ័យ ទើបយើងកាត់ចេញពី UI React
       setGames((current) => current.filter((item) => item.id !== id));
       setMessage("Game deleted successfully.");
     } catch (err) {
@@ -145,20 +159,19 @@ function GameManagement() {
     }
   }
 
-  // 🔍 មុខងារចម្រាញ់ទិន្នន័យស្វែងរក (Filtering logic)
+  // 🔍 Filter Search
   const filteredGames = games.filter((game) => {
     return game.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
            game.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           String(game.api_game_id).includes(searchQuery) ||
            String(game.id).includes(searchQuery);
   });
 
   return (
     <div className="p-6 bg-[#0f1115] min-h-screen text-slate-100">
-      
-      {/* 📦 កាតមេស្ទីលងងឹត */}
       <div className="bg-[#161920] rounded-3xl border border-white/5 overflow-hidden">
         
-        {/* 📋 Header Section */}
+        {/* Header Section */}
         <div className="p-5 border-b border-white/5 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-cyan-400">Management</p>
@@ -172,9 +185,9 @@ function GameManagement() {
           </button>
         </div>
 
-        {/* ➕ Form បញ្ចូលហ្គេមថ្មី */}
+        {/* Form បញ្ចូលហ្គេមថ្មី */}
         {creating && (
-          <form onSubmit={handleCreateGame} className="p-5 bg-slate-950/40 border-b border-white/5 grid gap-4 md:grid-cols-4 items-end">
+          <form onSubmit={handleCreateGame} className="p-5 bg-slate-950/40 border-b border-white/5 grid gap-4 md:grid-cols-5 items-end">
             <div className="grid gap-2">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Game Name</span>
               <input
@@ -195,6 +208,17 @@ function GameManagement() {
                 required
               />
             </div>
+            {/* 🎯 Input សម្រាប់ API Game ID */}
+            <div className="grid gap-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">API Game ID</span>
+              <input
+                type="number"
+                value={createForm.api_game_id}
+                onChange={(e) => setCreateForm({ ...createForm, api_game_id: e.target.value })}
+                className="w-full bg-[#0f1115] border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white outline-none focus:border-cyan-500 font-mono"
+                placeholder="e.g. 5"
+              />
+            </div>
             <div className="flex items-center gap-3 bg-[#0f1115] border border-white/10 rounded-2xl px-4 py-3 h-[45px] cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -202,7 +226,7 @@ function GameManagement() {
                 onChange={(e) => setCreateForm({ ...createForm, is_active: e.target.checked })}
                 className="w-4 h-4 rounded bg-[#0f1115] border-white/10 text-cyan-500 focus:ring-cyan-500"
               />
-              <span className="text-sm font-semibold text-slate-300">Active Status</span>
+              <span className="text-sm font-semibold text-slate-300">Active</span>
             </div>
             <div>
               <button 
@@ -216,50 +240,49 @@ function GameManagement() {
           </form>
         )}
 
-        {/* 🔍 របារស្វែងរក */}
+        {/* របារស្វែងរក */}
         <div className="p-4 bg-[#161920] border-b border-white/5">
           <div className="relative w-full md:w-1/3">
-            <span className="absolute left-4 top-3 text-slate-500 text-sm"></span>
             <input
               type="text"
-              placeholder="Search main categories..."
+              placeholder="Search by name, code, API ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0f1115] border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white outline-none focus:border-cyan-500 placeholder-slate-600"
+              className="w-full bg-[#0f1115] border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white outline-none focus:border-cyan-500 placeholder-slate-600"
             />
           </div>
         </div>
 
-        {/* 📢 Message Alerts */}
+        {/* Messages */}
         {message && <div className="m-4 p-3 bg-emerald-500/10 text-emerald-400 text-sm rounded-2xl font-semibold border border-emerald-500/20">{message}</div>}
         {error && <div className="m-4 p-3 bg-rose-500/10 text-rose-400 text-sm rounded-2xl font-semibold border border-rose-500/20">{error}</div>}
 
-        {/* 📊 តារាងទិន្នន័យ (Data Table) */}
+        {/* តារាងទិន្នន័យ */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 bg-[#0f1115]/50 text-xs font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-4 px-6 w-24">Order</th>
+                <th className="py-4 px-6 w-16">Order</th>
                 <th className="py-4 px-4">Name</th>
                 <th className="py-4 px-4">Code</th>
-                <th className="py-4 px-4 w-32 text-center">Status</th>
+                <th className="py-4 px-4 w-32">API Game ID</th> {/* 🎯 Column Header ថ្មី */}
+                <th className="py-4 px-4 w-28 text-center">Status</th>
                 <th className="py-4 px-6 w-28 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-sm text-slate-300">
               {loading ? (
-                <tr><td colSpan="5" className="py-8 text-center text-slate-500">Loading data...</td></tr>
+                <tr><td colSpan="6" className="py-8 text-center text-slate-500">Loading data...</td></tr>
               ) : filteredGames.length === 0 ? (
-                <tr><td colSpan="5" className="py-8 text-center text-slate-500">No matching records found</td></tr>
+                <tr><td colSpan="6" className="py-8 text-center text-slate-500">No matching records found</td></tr>
               ) : (
                 filteredGames.map((game, index) => {
                   const draft = drafts[game.id] || {};
                   return (
                     <tr key={game.id} className="hover:bg-white/[0.02] transition-colors">
-                      {/* Order */}
                       <td className="py-4 px-6 font-medium text-slate-500">{index + 1}</td>
                       
-                      {/* Name Input */}
+                      {/* Name */}
                       <td className="py-4 px-4 font-semibold text-white">
                         <input
                           type="text"
@@ -269,7 +292,7 @@ function GameManagement() {
                         />
                       </td>
 
-                      {/* Code Input */}
+                      {/* Code */}
                       <td className="py-4 px-4 text-slate-400">
                         <input
                           type="text"
@@ -279,20 +302,30 @@ function GameManagement() {
                         />
                       </td>
 
+                      {/* 🎯 API Game ID Input */}
+                      <td className="py-4 px-4 text-slate-400">
+                        <input
+                          type="number"
+                          value={draft.api_game_id ?? ""}
+                          onChange={(e) => updateDraft(game.id, "api_game_id", e.target.value)}
+                          placeholder="N/A"
+                          className="bg-transparent hover:bg-white/5 focus:bg-[#0f1115] focus:ring-1 focus:ring-cyan-500 rounded-xl px-2 py-1.5 -ml-2 w-full outline-none transition-all text-cyan-400 font-mono"
+                        />
+                      </td>
+
                       {/* Status Checkbox */}
                       <td className="py-4 px-4 text-center">
                         <input
                           type="checkbox"
                           checked={Boolean(draft.is_active)}
                           onChange={(e) => updateDraft(game.id, "is_active", e.target.checked)}
-                          className="w-4 h-4 rounded bg-[#0f1115] border-white/10 text-cyan-500 focus:ring-cyan-500"
+                          className="w-4 h-4 rounded bg-[#0f1115] border-white/10 text-cyan-500 focus:ring-cyan-500 cursor-pointer"
                         />
                       </td>
 
-                      {/* Actions: Edit/Save & Delete Icons */}
+                      {/* Actions */}
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end gap-3">
-                          {/* ប៊ូតុង Save (រូបខ្មៅដៃ) */}
                           <button
                             onClick={() => saveGame(game.id)}
                             disabled={savingId === game.id}
@@ -308,7 +341,6 @@ function GameManagement() {
                             )}
                           </button>
 
-                          {/* ប៊ូតុង Delete (រូបធុងសម្រាម) */}
                           <button
                             onClick={() => deleteGame(game.id)}
                             title="Delete"
