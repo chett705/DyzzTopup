@@ -37,8 +37,8 @@ function App() {
       <AdminAuthProvider>
         <Routes>
           {/* Client Routes */}
-          {/* <Route path="/" element={<Game />} /> */}
-          <Route path="/" element={<Loading />} />
+          <Route path="/" element={<Game />} />
+          {/* <Route path="/" element={<Loading />} /> */}
 
           <Route path="/games/:id" element={<Packages />} />
           <Route path="/orders" element={<Orders />} />
