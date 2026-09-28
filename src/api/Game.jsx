@@ -23,8 +23,7 @@ const CSS = `
   .gp-brand { display:flex;align-items:center;gap:8px; }
   .gp-gem { font-size:20px;background:linear-gradient(135deg,#00e5ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
   .gp-brand-txt { font-size:10.5px;font-weight:900;letter-spacing:.26em;background:linear-gradient(90deg,#00e5ff,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase; }
-  .gp-track { font-size:11px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:6px 16px;transition:all .2s; }
-  .gp-track:hover { color:#00e5ff;border-color:rgba(0,229,255,.3);background:rgba(0,229,255,.05); }
+
 
   /* hero */
   .gp-hero { position:relative;border-radius:24px;overflow:hidden;border:1px solid rgba(168,85,247,.22);box-shadow:0 0 70px rgba(100,30,200,.2),0 0 0 1px rgba(255,255,255,.03);margin-bottom:52px; }
@@ -126,7 +125,7 @@ function Game() {
             <span className="gp-gem">◈</span>
             <span className="gp-brand-txt">DYZZ DIAMOND TOP UP</span>
           </div>
-          <Link to="/orders" className="gp-track">Track Order</Link>
+
         </header>
 
         {/* Hero Banner */}
