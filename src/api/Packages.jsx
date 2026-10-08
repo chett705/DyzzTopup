@@ -172,7 +172,7 @@ function Packages() {
 
   const activePackage = useMemo(() => sortedPackages.find((pkg) => String(pkg.id) === String(selectedPackage)), [sortedPackages, selectedPackage]);
   const currentGameCode = (game?.code || "").toLowerCase();
-  const showZoneInput = currentGameCode.includes("mlbb") || currentGameCode === "magic_chest_gogo" || currentGameCode === "mlbb_exclusive";
+  const showZoneInput = currentGameCode.includes("mlbb") || currentGameCode === "magic_chest_gogo" || currentGameCode === "TOPUP_MOBILE_LEGENDS_EXCLUSIVE";
 
 
   async function handleCheckUsername() {
@@ -363,4 +363,4 @@ function Packages() {
   );
 }
 
-export default Packages;
+export default Packages;
