@@ -75,6 +75,24 @@ const PKG_CSS = `
   .pk-pkg-price { font-size:11px;font-weight:900;color:#34d399;background:rgba(52,211,153,.07);padding:4px 9px;border-radius:8px;border:1px solid rgba(52,211,153,.14);white-space:nowrap; }
   .pk-pkg.active .pk-pkg-price { background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.25);color:#67e8f9; }
 
+  /* payment methods */
+  .pk-pay-methods { display:grid;gap:12px;grid-template-columns:1fr; }
+  @media(min-width:480px){ .pk-pay-methods { grid-template-columns:1fr 1fr; } }
+  .pk-pay-opt { display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid rgba(168,85,247,.12);background:rgba(10,6,24,.7);cursor:pointer;transition:all .24s;text-align:left;font-family:inherit;width:100%;color:#fff;position:relative; }
+  .pk-pay-opt:hover { border-color:rgba(168,85,247,.32);background:rgba(20,10,48,.8); }
+  .pk-pay-opt.active { border-color:rgba(0,229,255,.5);background:linear-gradient(135deg,rgba(0,229,255,.08),rgba(168,85,247,.1));box-shadow:0 0 28px rgba(0,229,255,.1),0 0 0 1px rgba(0,229,255,.15); }
+  .pk-pay-opt-icon { width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;letter-spacing:.05em;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.3); }
+  .pk-pay-opt-aba { background:linear-gradient(135deg,#005f73,#0a9396);border:1px solid rgba(10,147,150,.4);color:#e0f2fe; }
+  .pk-pay-opt-khqr { background:linear-gradient(135deg,#b91c1c,#e11d48);border:1px solid rgba(225,29,72,.4);color:#ffe4e6; }
+  .pk-pay-opt-info { flex:1;min-width:0; }
+  .pk-pay-opt-title { font-size:13px;font-weight:800;color:#cbd5e1;margin:0 0 2px; }
+  .pk-pay-opt.active .pk-pay-opt-title { color:#e0f2fe; }
+  .pk-pay-opt-desc { font-size:11px;color:#475569;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .pk-pay-radio { width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.2);margin-left:auto;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s; }
+  .pk-pay-opt.active .pk-pay-radio { border-color:#00e5ff; }
+  .pk-pay-radio-dot { width:8px;height:8px;border-radius:50%;background:#00e5ff;box-shadow:0 0 8px #00e5ff;display:none; }
+  .pk-pay-opt.active .pk-pay-radio-dot { display:block; }
+
   /* checkout aside */
   .pk-aside { background:rgba(255,255,255,.025);border:1px solid rgba(168,85,247,.14);border-radius:22px;padding:22px; }
   @media(min-width:1024px){ .pk-aside { position:sticky;top:24px; } }
@@ -132,6 +150,7 @@ function Packages() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("payway"); // "payway" or "khqr"
 
   useEffect(() => {
     let ignore = false;
@@ -150,6 +169,7 @@ function Packages() {
           setPaymentUrl("");
           setAcceptedTerms(false);
           setShowQrModal(false);
+          setPaymentMethod("payway");
         }
       } catch (err) {
         if (!ignore) setError(err.message || "Unable to load packages.");
@@ -189,15 +209,30 @@ function Packages() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    // if (!usernameResult || acceptedTerms) return setError("Please complete required info and accept terms.");
     try {
       setSubmitting(true); setError("");
       const orderResponse = await requestJson("/orders", {
         method: "POST",
-        body: JSON.stringify({ game_code: currentGameCode, package_id: Number(selectedPackage), player_id: form.user_id, player_username: usernameResult?.username || usernameResult?.player_name || "", zone_id: form.server_id, payment_method: "khqr" }),
+        body: JSON.stringify({
+          game_code: currentGameCode,
+          package_id: Number(selectedPackage),
+          player_id: form.user_id,
+          player_username: usernameResult?.username || usernameResult?.player_name || "",
+          zone_id: form.server_id,
+          payment_method: paymentMethod,
+        }),
       });
-      const url = orderResponse?.checkout_url || orderResponse?.data?.checkout_url;
-      if (url) { setPaymentUrl(url); setShowQrModal(true); }
+
+      const defaultPaywayUrl = import.meta.env.VITE_PAYWAY_URL || "https://link.payway.com.kh/ABAPAY9s540501U";
+      const rawUrl = orderResponse?.checkout_url || orderResponse?.data?.checkout_url;
+      const finalUrl = (paymentMethod === "payway" && (!rawUrl || rawUrl.includes("khqr.cc")))
+        ? defaultPaywayUrl
+        : (rawUrl || (paymentMethod === "payway" ? defaultPaywayUrl : ""));
+
+      if (finalUrl) {
+        setPaymentUrl(finalUrl);
+        setShowQrModal(true);
+      }
     } catch (err) { setError(err.message || "Submission failed."); } finally { setSubmitting(false); }
   }
 
@@ -308,6 +343,44 @@ function Packages() {
                     })}
                   </div>
                 </div>
+
+                {/* Payment Method Selection */}
+                <div className="pk-section">
+                  <p className="pk-label-hd">Select Payment Method</p>
+                  <p className="pk-label-sub">Choose whether to pay via ABA PayWay or Bakong KHQR.</p>
+
+                  <div className="pk-pay-methods">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("payway")}
+                      className={`pk-pay-opt${paymentMethod === "payway" ? " active" : ""}`}
+                    >
+                      <div className="pk-pay-opt-icon pk-pay-opt-aba">ABA</div>
+                      <div className="pk-pay-opt-info">
+                        <p className="pk-pay-opt-title">ABA PayWay</p>
+                        <p className="pk-pay-opt-desc">ABA Mobile App &amp; Cards</p>
+                      </div>
+                      <div className="pk-pay-radio">
+                        <div className="pk-pay-radio-dot" />
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("khqr")}
+                      className={`pk-pay-opt${paymentMethod === "khqr" ? " active" : ""}`}
+                    >
+                      <div className="pk-pay-opt-icon pk-pay-opt-khqr">KHQR</div>
+                      <div className="pk-pay-opt-info">
+                        <p className="pk-pay-opt-title">Bakong KHQR</p>
+                        <p className="pk-pay-opt-desc">All Banks in Cambodia</p>
+                      </div>
+                      <div className="pk-pay-radio">
+                        <div className="pk-pay-radio-dot" />
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Right Checkout Aside */}
@@ -317,6 +390,20 @@ function Packages() {
                 <p className="pk-aside-hint">Review your package and confirm terms to continue.</p>
 
                 <div className="pk-total-box">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <span className="pk-total-label" style={{ margin: 0 }}>Payment Method</span>
+                    <span style={{
+                      fontSize: "11px",
+                      fontWeight: "800",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: paymentMethod === "payway" ? "rgba(0, 180, 216, 0.15)" : "rgba(225, 29, 72, 0.15)",
+                      color: paymentMethod === "payway" ? "#38bdf8" : "#fb7185",
+                      border: `1px solid ${paymentMethod === "payway" ? "rgba(0, 180, 216, 0.3)" : "rgba(225, 29, 72, 0.3)"}`
+                    }}>
+                      {paymentMethod === "payway" ? "ABA PayWay" : "Bakong KHQR"}
+                    </span>
+                  </div>
                   <p className="pk-total-label">Total</p>
                   <p className="pk-total-price">${Number(activePackage?.price || 0).toFixed(2)}</p>
                 </div>
@@ -340,7 +427,9 @@ function Packages() {
                   className="pk-pay-btn"
                 >
                   <span>{submitting ? "Processing..." : "Pay Now"}</span>
-                  <span className="pk-pay-badge">KHQR</span>
+                  <span className="pk-pay-badge">
+                    {paymentMethod === "payway" ? "ABA PAY" : "KHQR"}
+                  </span>
                 </button>
               </aside>
 
@@ -349,13 +438,45 @@ function Packages() {
         )}
       </div>
 
-      {/* QR Code Modal */}
+      {/* Payment Modal */}
       {showQrModal && paymentUrl && (
         <div className="pk-modal-bg">
           <div className="pk-modal">
             <button onClick={() => setShowQrModal(false)} className="pk-modal-close">✕</button>
-            <h3 className="pk-modal-title">Scan to Pay (KHQR)</h3>
-            <iframe src={paymentUrl} title="KHQR Web Interface" className="pk-modal-frame" />
+            <h3 className="pk-modal-title">
+              {paymentMethod === "payway" ? "Pay with ABA PayWay" : "Scan to Pay (Bakong KHQR)"}
+            </h3>
+            <div style={{ marginBottom: "16px" }}>
+              <a
+                href={paymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: paymentMethod === "payway"
+                    ? "linear-gradient(135deg, #00b4d8, #0077b6)"
+                    : "linear-gradient(135deg, #e11d48, #be123c)",
+                  color: "#fff",
+                  fontSize: "12px",
+                  fontWeight: "800",
+                  padding: "9px 18px",
+                  borderRadius: "12px",
+                  textDecoration: "none",
+                  boxShadow: paymentMethod === "payway"
+                    ? "0 4px 15px rgba(0, 180, 216, 0.35)"
+                    : "0 4px 15px rgba(225, 29, 72, 0.35)",
+                }}
+              >
+                {paymentMethod === "payway" ? "Open in ABA Mobile App ↗" : "Open Payment Screen ↗"}
+              </a>
+            </div>
+            <iframe
+              src={paymentUrl}
+              title={paymentMethod === "payway" ? "ABA PayWay Payment" : "Bakong KHQR Payment"}
+              className="pk-modal-frame"
+            />
           </div>
         </div>
       )}

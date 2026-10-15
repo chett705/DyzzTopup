@@ -146,14 +146,26 @@ useEffect(() => {
               <DetailCard label="Amount" value={order.amount != null ? order.amount : "-"} />
             </div>
 
-            {order.payment?.khqr_string ? (
+            {order.payment?.khqr_string || order.gateway_checkout_url || order.checkout_url ? (
               <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                  KHQR
+                  {order.payment_method ? order.payment_method.toUpperCase() : "PAYMENT"}
                 </p>
-                <p className="mt-2 break-words text-sm text-slate-100">
-                  {order.payment.khqr_string}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  {(order.gateway_checkout_url || order.checkout_url) && (
+                    <a
+                      href={order.gateway_checkout_url || order.checkout_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-cyan-500/20 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/30 transition"
+                    >
+                      Pay Now (PayWay) ↗
+                    </a>
+                  )}
+                  <p className="break-all text-sm text-slate-100">
+                    {order.payment?.khqr_string || order.gateway_checkout_url || order.checkout_url}
+                  </p>
+                </div>
               </div>
             ) : null}
 

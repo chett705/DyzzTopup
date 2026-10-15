@@ -58,7 +58,10 @@ export function getImageUrl(path) {
   return `${window.location.origin}/${path.replace(/^\/+/, "")}`;
 }
 
-export function getKhqrPaymentUrl(orderId) {
+export function getPaymentUrl(orderId) {
   if (!orderId && orderId !== 0) return "";
   return buildUrl(`/orders/${encodeURIComponent(orderId)}/checkout`);
 }
+
+export const getKhqrPaymentUrl = getPaymentUrl;
+export const getPaywayPaymentUrl = getPaymentUrl;
