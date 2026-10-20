@@ -192,33 +192,107 @@ function Packages() {
 
   const activePackage = useMemo(() => sortedPackages.find((pkg) => String(pkg.id) === String(selectedPackage)), [sortedPackages, selectedPackage]);
   const currentGameCode = (game?.code || "").toLowerCase();
-  const showZoneInput = currentGameCode.includes("mlbb") || currentGameCode === "magic_chest_gogo" || currentGameCode === "mlbb_exclusive";
+  const currentGameName = (game?.name || "").toLowerCase();
+  const showZoneInput =
+    currentGameCode.includes("mlbb") ||
+    currentGameCode.includes("mobile_legends") ||
+    currentGameCode.includes("magic_chest") ||
+    currentGameCode.includes("magic_chess") ||
+    currentGameName.includes("mobile legends") ||
+    currentGameName.includes("magic chess") ||
+    currentGameName.includes("magic chest") ||
+    currentGameName.includes("mlbb");
 
+  const gameBadge = useMemo(() => {
+    if (!game) return "";
+    const name = (game.name || "").toLowerCase();
+    const code = (game.code || "").toLowerCase();
+    if (code.includes("mlbb") || name.includes("mobile legends")) return "MLBB";
+    if (code.includes("magic_chest") || code.includes("magic_chess") || name.includes("magic chess")) return "MCGG";
+    if (code.includes("freefire") || name.includes("free fire")) return "FF";
+    if (code.includes("pubg") || name.includes("pubg")) return "PUBG";
+    return (game.code || game.name || "").substring(0, 4).toUpperCase();
+  }, [game]);
 
   async function handleCheckUsername() {
     try {
-      setCheckingUsername(true); setUsernameError(""); setUsernameResult(null);
+      const trimmedUserId = form.user_id.trim();
+      const trimmedServerId = form.server_id.trim();
+
+      if (!trimmedUserId) {
+        setUsernameError("Please enter your User ID.");
+        return;
+      }
+      if (showZoneInput && !trimmedServerId) {
+        setUsernameError("Please enter your Server / Zone ID.");
+        return;
+      }
+
+      setCheckingUsername(true);
+      setUsernameError("");
+      setUsernameResult(null);
+
       const response = await requestJson("/check-username", {
         method: "POST",
-        body: JSON.stringify({ game_code: currentGameCode, player_id: form.user_id.trim(), zone_id: form.server_id.trim() }),
+        body: JSON.stringify({
+          game_code: currentGameCode,
+          player_id: trimmedUserId,
+          zone_id: trimmedServerId,
+        }),
       });
+
       const resData = response?.result?.data || response?.result || response;
-      if (resData) setUsernameResult(resData); else throw new Error("Character not found.");
-    } catch (err) { setUsernameError(err.message || "Verification Error."); } finally { setCheckingUsername(false); }
+      const foundName = resData?.player_name || resData?.username || resData?.name;
+      const isExplicitlyInvalid =
+        resData?.raw_data?.data?.valid === false ||
+        !foundName ||
+        foundName.trim().toLowerCase() === "na";
+
+      if (isExplicitlyInvalid) {
+        const errorMsg =
+          resData?.raw_data?.data?.message ||
+          resData?.message ||
+          "Player not found. Please verify your User ID and Zone ID.";
+        throw new Error(errorMsg);
+      }
+
+      setUsernameResult({ ...resData, verifiedName: foundName });
+    } catch (err) {
+      setUsernameError(err.message || "Verification Error.");
+    } finally {
+      setCheckingUsername(false);
+    }
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const trimmedUserId = form.user_id.trim();
+    const trimmedServerId = form.server_id.trim();
+
+    if (!trimmedUserId) {
+      setError("Please enter your User ID / Player ID.");
+      return;
+    }
+    if (showZoneInput && !trimmedServerId) {
+      setError("Please enter your Server / Zone ID.");
+      return;
+    }
+    if (!selectedPackage) {
+      setError("Please select a package.");
+      return;
+    }
+
     try {
-      setSubmitting(true); setError("");
+      setSubmitting(true);
+      setError("");
       const orderResponse = await requestJson("/orders", {
         method: "POST",
         body: JSON.stringify({
           game_code: currentGameCode,
           package_id: Number(selectedPackage),
-          player_id: form.user_id,
-          player_username: usernameResult?.username || usernameResult?.player_name || "",
-          zone_id: form.server_id,
+          player_id: trimmedUserId,
+          player_username: usernameResult?.verifiedName || usernameResult?.player_name || usernameResult?.username || "",
+          zone_id: trimmedServerId,
           payment_method: paymentMethod,
         }),
       });
@@ -233,7 +307,11 @@ function Packages() {
         setPaymentUrl(finalUrl);
         setShowQrModal(true);
       }
-    } catch (err) { setError(err.message || "Submission failed."); } finally { setSubmitting(false); }
+    } catch (err) {
+      setError(err.message || "Submission failed.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -270,7 +348,7 @@ function Packages() {
                 {/* Game Header */}
                 <div className="pk-section pk-game-hd">
                   <div className="pk-game-icon">
-                    <span className="pk-game-icon-txt">{game.code?.substring(0, 4)}</span>
+                    <span className="pk-game-icon-txt">{gameBadge}</span>
                   </div>
                   <div>
                     <h1 className="pk-game-name">{game.name}</h1>
@@ -289,7 +367,13 @@ function Packages() {
                       <input
                         className="pk-input"
                         value={form.user_id}
-                        onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+                        onChange={(e) => {
+                          setForm({ ...form, user_id: e.target.value });
+                          if (usernameResult || usernameError) {
+                            setUsernameResult(null);
+                            setUsernameError("");
+                          }
+                        }}
                         placeholder="702425515"
                       />
                     </div>
@@ -299,7 +383,13 @@ function Packages() {
                         <input
                           className="pk-input"
                           value={form.server_id}
-                          onChange={(e) => setForm({ ...form, server_id: e.target.value })}
+                          onChange={(e) => {
+                            setForm({ ...form, server_id: e.target.value });
+                            if (usernameResult || usernameError) {
+                              setUsernameResult(null);
+                              setUsernameError("");
+                            }
+                          }}
                           placeholder="10301"
                         />
                       </div>
@@ -309,7 +399,7 @@ function Packages() {
                   <div className="pk-check-row">
                     <div>
                       {usernameResult && (
-                        <span className="pk-username-ok">✓ {usernameResult.player_name || usernameResult.username}</span>
+                        <span className="pk-username-ok">✓ {usernameResult.verifiedName || usernameResult.player_name || usernameResult.username}</span>
                       )}
                       {usernameError && (
                         <span className="pk-username-err">⚠️ {usernameError}</span>
